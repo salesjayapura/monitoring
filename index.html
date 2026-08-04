@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Push Limits Dashboard</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Recharts Dependencies & Library -->
+    <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-is@18.2.0/umd/react-is.production.min.js"></script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
+
+    <!-- SheetJS (Upload Excel) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #000; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
+        
+        .excel-table { width: 100%; border-collapse: collapse; background-color: #fff; font-size: 11px; }
+        .excel-table th { border: 1px solid #000; background-color: #fde047; padding: 6px; font-weight: bold; text-align: center; }
+        .excel-table td { border: 1px solid #000; padding: 4px 6px; }
+        .excel-table .total-row { background-color: #fef08a; font-weight: bold; }
+        .header-title { font-weight: 800; text-transform: uppercase; text-align: center; background-color: #fde047; padding: 6px 16px; display: inline-block; font-size: 16px; margin-bottom: 8px; border: 1px solid #000;}
+        
+        /* Pewarnaan Minus dan Plus Mutlak */
+        .text-red-alert { color: #dc2626 !important; font-weight: 900 !important; }
+        .text-green-good { color: #16a34a !important; font-weight: 900 !important; }
+        .text-gray-normal { color: #374151; font-weight: 700; }
+        
+        .npd-table th, .npd-table td { padding: 4px; font-size: 10px; text-align: right; border: 1px solid #000; }
+        .npd-table th:first-child, .npd-table td:first-child { text-align: left; }
+        .bg-2025 { background-color: #fde68a; }
+        .bg-2026 { background-color: #fed7aa; }
+        .bg-grand { background-color: #bbf7d0; font-weight: bold; }
+        
+        .city-card { background: white; border: 1px solid #000; border-radius: 8px; overflow: hidden; display: flex; align-items: center; padding: 12px; box-shadow: 2px 2px 0px rgba(0,0,0,0.2); }
+        .city-logo { width: 80px; height: 80px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; margin-right: 16px; display:flex; justify-content:center; align-items:center; font-size: 32px;}
+        .city-info { flex: 1; font-size: 12px;}
+        .city-title { font-weight: 900; text-transform: uppercase; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 4px; font-size: 14px;}
+        .city-stat { display: flex; justify-content: space-between; margin-bottom: 2px;}
+
+        @keyframes ping-map {
+            75%, 100% { transform: scale(2.5); opacity: 0; }
+        }
+        .animate-ping-map { animation: ping-map 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, Component } = React;
+
+        const Recharts = window.Recharts || {};
+        const ResponsiveContainer = Recharts.ResponsiveContainer || (({ children }) => <div className="w-full h-64">{children}</div>);
+        const LineChart = Recharts.LineChart || (({ children }) => <div>{children}</div>);
+        const CartesianGrid = Recharts.CartesianGrid || (() => null);
+        const XAxis = Recharts.XAxis || (() => null);
+        const YAxis = Recharts.YAxis || (() => null);
+        const Tooltip = Recharts.Tooltip || (() => null);
+        const Legend = Recharts.Legend || (() => null);
+        const Line = Recharts.Line || (() => null);
+
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyyn_npH0wGFZsd4WgxrYXK2OnUrWVeA5nEX4_qybbxg9y1slR4v8QexRJBUDqh7_YQ/exec';
+
+        class ErrorBoundary extends Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+            static getDerivedStateFromError(error) {
+                return { hasError: true, error };
+            }
+            componentDidCatch(error, errorInfo) {
+                console.error("Dashboard Render Error:", error, errorInfo);
+            }
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="p-8 m-6 bg-red-50 border-2 border-red-500 rounded-lg text-red-800 text-center shadow-lg">
+                            <h2 className="text-2xl font-black mb-2">Terjadi Kesalahan Aplikasi</h2>
+                            <p className="text-sm font-mono mb-4 bg-white p-3 border border-red-200 rounded text-left overflow-x-auto">
+                                {this.state.error && this.state.error.toString()}
+                            </p>
+                            <button onClick={() => window.location.reload()} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow transition-all">
+                                Muat Ulang Halaman
+                            </button>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
+
+        // ==========================================
+        // GLOBAL UTILITIES
+        // ==========================================
+        const getVal = (row, keywords) => {
+            if (!row || typeof row !== 'object') return undefined;
+            const keys = Object.keys(row);
+            for(let k of keys) {
+                const lowerK = String(k).toLowerCase().replace(/_/g, ' ').trim();
+                if(keywords.some(kw => lowerK.includes(kw))) return row[k];
+            }
+            return undefined;
+        };
+
+        const parseNum = (val) => {
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            if (!val) return 0;
+            let str = String(val).trim().replace(/rp/gi, '').trim();
+            if (str.includes(',') && str.includes('.')) {
+                if (str.lastIndexOf('.') > str.lastIndexOf(',')) {
+                    str = str.replace(/,/g, '');
+                } else {
+                    str = str.replace(/\./g, '').replace(',', '.');
+                }
+            } else if (str.includes('.')) {
+                let parts = str.split('.');
+                if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
+                    str = str.replace(/\./g, '');
+                }
+            } else if (str.includes(',')) {
+                let parts = str.split(',');
+                if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
+                    str = str.replace(/,/g, '');
+                } else {
+                    str = str.replace(',', '.');
+                }
+            }
+            return parseFloat(str) || 0;
+        };
+
+        const formatCurr = (val) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val || 0);
+        
+        const calcGrowth = (currAvg, prevAvg) => {
+            if (prevAvg > 0) return Math.round(((currAvg / prevAvg) - 1) * 100);
+            if (currAvg > 0 && prevAvg <= 0) return 100;
+            return 0;
+        };
+        const getP = (ach, qta) => qta > 0 ? Math.round((ach/qta)*100) : (ach > 0 ? 100 : 0);
+
+        // Kunci Global Detektor Business Type agar akurat untuk tahun 2025 & 2026
+        const detectBizType = (row) => {
+            const kBiz = ['business', 'bisnis', 'bussines'];
+            const kDiv = ['division', 'divisi', 'div', 'departemen'];
+            
+            let biz = String(getVal(row, kBiz) || '').trim().toUpperCase();
+            if(biz === 'PHG' || biz === 'CHG') return biz;
+            
+            // Fallback: Jika Business kosong, tebak dari Division
+            let div = String(getVal(row, kDiv) || '').toUpperCase();
+            if(div.includes('CARDIO') || div.includes('CHILD') || div.includes('CRITICAL') || div.includes('MEDICINE') || div.includes('WOMEN') || div.includes('WOUND')) return 'PHG';
+            if(div.includes('COMMON') || div.includes('HEALTH') || div.includes('PERSONAL') || div.includes('NATURAL') || div.includes('NUTRITION')) return 'CHG';
+            
+            return 'UNKNOWN';
+        };
+
+        // Kunci Warna dan Format Plus/Minus
+        const cGrw = (v) => v < 0 ? 'text-red-alert' : (v > 0 ? 'text-green-good' : 'text-gray-normal');
+        const fGrw = (v) => v > 0 ? `+${v}%` : `${v}%`;
+
+        // Kunci Warna % Achivement (Hanya Merah jika dibawah 100%)
+        const cAch = (v) => v < 100 ? 'text-red-alert' : 'text-green-good';
+
+        const SemiCircleGauge = ({ value = 0, label }) => {
+            const safe = Math.max(0, Math.min(150, value));
+            const rot = (safe / 100) * 180; 
+            return (
+                <div className="flex flex-col items-center">
+                    <div className="bg-black text-white text-[10px] font-bold px-3 py-0.5 mb-1 rounded">{label}</div>
+                    <div className="relative w-32 h-16 overflow-hidden">
+                        <svg className="w-full h-full drop-shadow" viewBox="0 0 100 50">
+                            <defs>
+                                <linearGradient id="gGrad">
+                                    <stop offset="0%" stopColor="#ef4444"/>
+                                    <stop offset="40%" stopColor="#eab308"/>
+                                    <stop offset="100%" stopColor="#22c55e"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="url(#gGrad)" strokeWidth="12" />
+                            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#000" strokeWidth="1.5" />
+                            <path d="M 22 50 A 28 28 0 0 1 78 50" fill="none" stroke="#000" strokeWidth="1.5" />
+                            <g transform={`rotate(${rot - 90} 50 50)`} className="transition-transform duration-1000">
+                                <polygon points="49,50 51,50 50,15" fill="#ef4444" stroke="#000" strokeWidth="0.5" />
+                            </g>
+                            <circle cx="50" cy="50" r="4" fill="#000" />
+                        </svg>
+                        <div className="absolute bottom-1 right-0 bg-black text-white text-[10px] font-bold px-2 py-0.5 border border-white">{value}%</div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // MENU 1: REPORT SALES
+        // ==========================================
+        const ReportSalesView = ({ apiData, month, searchOutlet, filterDivisi, filterDistributor }) => {
+            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            const target2026 = apiData.target2026 || [];
+            const sales2026 = apiData.sales2026 || [];
+            const sales2025 = apiData.sales2025 || [];
+
+            const m = parseInt(month) || 1;
+            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const mName = mNames[m-1];
+
+            const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total', 'hna', 'net', 'ach'];
+            const kBulan = ['bulan', 'month', 'bln'];
+            const kDiv = ['division', 'divisi', 'div', 'departemen'];
+            const kChan = ['cluster', 'channel', 'grup', 'tipe outlet']; 
+            const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust'];
+            const kDist = ['distributor', 'dist'];
+
+            let dMap = { 
+                biz: { PHG:{q_mtd:0, a_mtd:0, q_ytd:0, a_ytd:0, a25_ytd:0, a25_fy:0}, CHG:{q_mtd:0, a_mtd:0, q_ytd:0, a_ytd:0, a25_ytd:0, a25_fy:0} }, 
+                div: { PHG:{}, CHG:{} },
+                chan: { CHG:{}, PHG:{} } 
+            };
+
+            const isRowValid = (r) => {
+                let custName = String(getVal(r, kCustName) || '').toLowerCase();
+                let divName = String(getVal(r, kDiv) || '').toUpperCase();
+                let distName = String(getVal(r, kDist) || '').toUpperCase();
+                
+                let passSearch = true;
+                if(searchOutlet && searchOutlet.trim() !== '') passSearch = custName.includes(searchOutlet.toLowerCase().trim());
+                
+                let passDiv = true;
+                if(filterDivisi && filterDivisi !== 'ALL') passDiv = divName.includes(filterDivisi);
+                
+                let passDist = true;
+                if(filterDistributor && filterDistributor !== 'ALL') {
+                    if(filterDistributor === 'APL') passDist = distName.includes('APL') || distName.includes('ANUGERAH');
+                    if(filterDistributor === 'KFT') passDist = !distName.includes('APL') && !distName.includes('ANUGERAH'); 
+                }
+
+                return passSearch && passDiv && passDist;
+            };
+
+            target2026.forEach(r => {
+                let biz = detectBizType(r); if(biz==='UNKNOWN') return;
+                let divName = String(getVal(r, kDiv) || '').toUpperCase();
+                if(filterDivisi && filterDivisi !== 'ALL' && !divName.includes(filterDivisi)) return; 
+                
+                let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                let bln = parseInt(getVal(r, kBulan));
+                
+                if (bln > 0) {
+                    if(bln === m) dMap.biz[biz].q_mtd += val;
+                    if(bln <= m) dMap.biz[biz].q_ytd += val;
+                } else {
+                    dMap.biz[biz].q_mtd += parseNum(getVal(r, [`quota ${mName.toLowerCase()}`, `target ${mName.toLowerCase()}`]));
+                    for(let i=0; i<m; i++) dMap.biz[biz].q_ytd += parseNum(getVal(r, [`quota ${mNames[i].toLowerCase()}`, `target ${mNames[i].toLowerCase()}`]));
+                }
+            });
+
+            sales2026.forEach(r => {
+                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                if(!isRowValid(r)) return;
+
+                let biz = detectBizType(r);
+                let div = String(getVal(r, kDiv) || 'UNASSIGNED').trim().toUpperCase();
+                let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim();
+                let sales = parseNum(getVal(r, kSales));
+
+                if(dMap.biz[biz]) {
+                    if(bln === m) dMap.biz[biz].a_mtd += sales;
+                    if(bln <= m) dMap.biz[biz].a_ytd += sales;
+                    
+                    if(!dMap.div[biz][div]) dMap.div[biz][div] = {y26:0, y25:0, f25:0};
+                    if(bln <= m) dMap.div[biz][div].y26 += sales;
+
+                    if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED') {
+                        if(!dMap.chan[biz][chan]) dMap.chan[biz][chan] = {y26:0, y25:0, f25:0};
+                        if(bln <= m) dMap.chan[biz][chan].y26 += sales;
+                    }
+                }
+            });
+
+            sales2025.forEach(r => {
+                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                if(!isRowValid(r)) return; 
+
+                let biz = detectBizType(r);
+                let div = String(getVal(r, kDiv) || 'UNASSIGNED').trim().toUpperCase();
+                let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim();
+                let sales = parseNum(getVal(r, kSales));
+
+                if(dMap.biz[biz]) {
+                    dMap.biz[biz].a25_fy += sales; 
+                    if(bln <= m) dMap.biz[biz].a25_ytd += sales; 
+                    
+                    if(!dMap.div[biz][div]) dMap.div[biz][div] = {y26:0, y25:0, f25:0};
+                    dMap.div[biz][div].f25 += sales;
+                    if(bln <= m) dMap.div[biz][div].y25 += sales;
+
+                    if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED') {
+                        if(!dMap.chan[biz][chan]) dMap.chan[biz][chan] = {y26:0, y25:0, f25:0};
+                        dMap.chan[biz][chan].f25 += sales;
+                        if(bln <= m) dMap.chan[biz][chan].y25 += sales;
+                    }
+                }
+            });
+
+            const mTot = {q: dMap.biz.PHG.q_mtd + dMap.biz.CHG.q_mtd, a: dMap.biz.PHG.a_mtd + dMap.biz.CHG.a_mtd};
+            const yTot = {q: dMap.biz.PHG.q_ytd + dMap.biz.CHG.q_ytd, a: dMap.biz.PHG.a_ytd + dMap.biz.CHG.a_ytd};
+            const y25Tot = { fy: dMap.biz.PHG.a25_fy + dMap.biz.CHG.a25_fy, ytd: dMap.biz.PHG.a25_ytd + dMap.biz.CHG.a25_ytd };
+
+            const buildDiv = (bz) => {
+                let arr = Object.keys(dMap.div[bz]).map(k => {
+                    let d = dMap.div[bz][k];
+                    let avgYtd26 = d.y26 / m; let avg25 = d.f25 / 12; let avgYtd25 = d.y25 / m;
+                    return { 
+                        div:k, y26: d.y26, avgYtd26, f25: d.f25, avg25, y25: d.y25, avgYtd25,
+                        avgGrwt: calcGrowth(avgYtd26, avg25), ytdGrwt: calcGrowth(d.y26, d.y25) 
+                    };
+                }).sort((a,b)=>a.div.localeCompare(b.div));
+                
+                let tot = arr.reduce((ac,cr)=>({
+                    y26: ac.y26+cr.y26, avgYtd26: ac.avgYtd26+cr.avgYtd26, f25: ac.f25+cr.f25, avg25: ac.avg25+cr.avg25, y25: ac.y25+cr.y25, avgYtd25: ac.avgYtd25+cr.avgYtd25
+                }), {y26:0, avgYtd26:0, f25:0, avg25:0, y25:0, avgYtd25:0});
+                
+                tot.avgGrwt = calcGrowth(tot.avgYtd26, tot.avg25); tot.ytdGrwt = calcGrowth(tot.y26, tot.y25);
+                return {arr, tot};
+            };
+            const chg = buildDiv('CHG'); const phg = buildDiv('PHG');
+
+            const buildChanByBiz = (bz) => {
+                let arr = Object.keys(dMap.chan[bz]).map(k => {
+                    const d = dMap.chan[bz][k];
+                    const avg25 = d.f25 / 12;
+                    const avgYtd25 = d.y25 / m;
+                    const avgYtd26 = d.y26 / m;
+                    return {
+                        cluster: k, avg25, avgYtd25, avgYtd26,
+                        y26: d.y26, y25: d.y25,
+                        avgGrwt: calcGrowth(avgYtd26, avg25), ytdGrwt: calcGrowth(d.y26, d.y25)
+                    };
+                }).sort((a,b) => a.cluster.localeCompare(b.cluster));
+
+                let tot = arr.reduce((acc, curr) => {
+                    acc.avg25 += curr.avg25; acc.avgYtd25 += curr.avgYtd25; acc.avgYtd26 += curr.avgYtd26;
+                    acc.y26 += curr.y26; acc.y25 += curr.y25;
+                    return acc;
+                }, { avg25: 0, avgYtd25: 0, avgYtd26: 0, y26: 0, y25: 0 });
+
+                tot.avgGrwt = calcGrowth(tot.avgYtd26, tot.avg25);
+                tot.ytdGrwt = calcGrowth(tot.y26, tot.y25);
+                return { arr, tot };
+            };
+
+            const chanCHG = buildChanByBiz('CHG');
+            const chanPHG = buildChanByBiz('PHG');
+
+            const chanGrandTot = {
+                avg25: chanCHG.tot.avg25 + chanPHG.tot.avg25,
+                avgYtd25: chanCHG.tot.avgYtd25 + chanPHG.tot.avgYtd25,
+                avgYtd26: chanCHG.tot.avgYtd26 + chanPHG.tot.avgYtd26,
+                y26: chanCHG.tot.y26 + chanPHG.tot.y26,
+                y25: chanCHG.tot.y25 + chanPHG.tot.y25
+            };
+            chanGrandTot.avgGrwt = calcGrowth(chanGrandTot.avgYtd26, chanGrandTot.avg25);
+            chanGrandTot.ytdGrwt = calcGrowth(chanGrandTot.y26, chanGrandTot.y25);
+
+            return (
+                <div className="space-y-6 animate-fade-in pb-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="bg-white border-2 border-black p-2 relative shadow-md">
+                            <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#f97316] flex items-center justify-center border-r-2 border-black">
+                                <span className="transform -rotate-90 font-black text-lg text-white tracking-widest">MTD</span>
+                            </div>
+                            <div className="ml-10">
+                                <div className="text-center"><h2 className="header-title">Perf By Business Type</h2></div>
+                                <div className="flex justify-around border-2 border-black p-2 mb-2 bg-white">
+                                    <SemiCircleGauge value={getP(mTot.a, mTot.q)} label="PAPUA" />
+                                    <SemiCircleGauge value={getP(dMap.biz.CHG.a_mtd, dMap.biz.CHG.q_mtd)} label="CHG" />
+                                    <SemiCircleGauge value={getP(dMap.biz.PHG.a_mtd, dMap.biz.PHG.q_mtd)} label="PHG" />
+                                </div>
+                                <table className="excel-table">
+                                    <thead><tr><th className="text-left w-1/4">Business</th><th className="text-right">Quota MTD</th><th className="text-right">ACH MTD</th><th>%</th></tr></thead>
+                                    <tbody>
+                                        <tr><td className="font-semibold">PHG</td><td className="text-right">{formatCurr(dMap.biz.PHG.q_mtd)}</td><td className="text-right">{formatCurr(dMap.biz.PHG.a_mtd)}</td><td className={`text-center font-bold ${cAch(getP(dMap.biz.PHG.a_mtd, dMap.biz.PHG.q_mtd))}`}>{getP(dMap.biz.PHG.a_mtd, dMap.biz.PHG.q_mtd)}%</td></tr>
+                                        <tr><td className="font-semibold">CHG</td><td className="text-right">{formatCurr(dMap.biz.CHG.q_mtd)}</td><td className="text-right">{formatCurr(dMap.biz.CHG.a_mtd)}</td><td className={`text-center font-bold ${cAch(getP(dMap.biz.CHG.a_mtd, dMap.biz.CHG.q_mtd))}`}>{getP(dMap.biz.CHG.a_mtd, dMap.biz.CHG.q_mtd)}%</td></tr>
+                                        <tr className="total-row"><td>Total</td><td className="text-right">{formatCurr(mTot.q)}</td><td className="text-right">{formatCurr(mTot.a)}</td><td className={`text-center font-bold ${cAch(getP(mTot.a, mTot.q))}`}>{getP(mTot.a, mTot.q)}%</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="bg-white border-2 border-black p-2 relative shadow-md">
+                            <div className="absolute left-0 top-0 bottom-0 w-8 bg-[#f97316] flex items-center justify-center border-r-2 border-black">
+                                <span className="transform -rotate-90 font-black text-lg text-white tracking-widest">YTD</span>
+                            </div>
+                            <div className="ml-10">
+                                <div className="text-center"><h2 className="header-title">Accumulated YTD</h2></div>
+                                <div className="flex justify-around border-2 border-black p-2 mb-2 bg-white">
+                                    <SemiCircleGauge value={getP(yTot.a, yTot.q)} label="PAPUA" />
+                                    <SemiCircleGauge value={getP(dMap.biz.CHG.a_ytd, dMap.biz.CHG.q_ytd)} label="CHG" />
+                                    <SemiCircleGauge value={getP(dMap.biz.PHG.a_ytd, dMap.biz.PHG.q_ytd)} label="PHG" />
+                                </div>
+                                <table className="excel-table">
+                                    <thead><tr><th className="text-left w-1/4">Business</th><th className="text-right">Quota YTD</th><th className="text-right">ACH YTD</th><th>%</th><th>Grwt Avg</th><th>Grwt YTD</th></tr></thead>
+                                    <tbody>
+                                        <tr>
+                                            <td className="font-semibold">PHG</td><td className="text-right">{formatCurr(dMap.biz.PHG.q_ytd)}</td><td className="text-right">{formatCurr(dMap.biz.PHG.a_ytd)}</td><td className={`text-center font-bold ${cAch(getP(dMap.biz.PHG.a_ytd, dMap.biz.PHG.q_ytd))}`}>{getP(dMap.biz.PHG.a_ytd, dMap.biz.PHG.q_ytd)}%</td>
+                                            <td className={`text-center ${cGrw(calcGrowth(dMap.biz.PHG.a_ytd/m, dMap.biz.PHG.a25_fy/12))}`}>{fGrw(calcGrowth(dMap.biz.PHG.a_ytd/m, dMap.biz.PHG.a25_fy/12))}</td>
+                                            <td className={`text-center ${cGrw(calcGrowth(dMap.biz.PHG.a_ytd, dMap.biz.PHG.a25_ytd))}`}>{fGrw(calcGrowth(dMap.biz.PHG.a_ytd, dMap.biz.PHG.a25_ytd))}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="font-semibold">CHG</td><td className="text-right">{formatCurr(dMap.biz.CHG.q_ytd)}</td><td className="text-right">{formatCurr(dMap.biz.CHG.a_ytd)}</td><td className={`text-center font-bold ${cAch(getP(dMap.biz.CHG.a_ytd, dMap.biz.CHG.q_ytd))}`}>{getP(dMap.biz.CHG.a_ytd, dMap.biz.CHG.q_ytd)}%</td>
+                                            <td className={`text-center ${cGrw(calcGrowth(dMap.biz.CHG.a_ytd/m, dMap.biz.CHG.a25_fy/12))}`}>{fGrw(calcGrowth(dMap.biz.CHG.a_ytd/m, dMap.biz.CHG.a25_fy/12))}</td>
+                                            <td className={`text-center ${cGrw(calcGrowth(dMap.biz.CHG.a_ytd, dMap.biz.CHG.a25_ytd))}`}>{fGrw(calcGrowth(dMap.biz.CHG.a_ytd, dMap.biz.CHG.a25_ytd))}</td>
+                                        </tr>
+                                        <tr className="total-row">
+                                            <td>Total</td><td className="text-right">{formatCurr(yTot.q)}</td><td className="text-right">{formatCurr(yTot.a)}</td><td className={`text-center font-bold ${cAch(getP(yTot.a, yTot.q))}`}>{getP(yTot.a, yTot.q)}%</td>
+                                            <td className={`text-center ${cGrw(calcGrowth(yTot.a/m, y25Tot.fy/12))}`}>{fGrw(calcGrowth(yTot.a/m, y25Tot.fy/12))}</td>
+                                            <td className={`text-center ${cGrw(calcGrowth(yTot.a, y25Tot.ytd))}`}>{fGrw(calcGrowth(yTot.a, y25Tot.ytd))}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-4 border shadow-md overflow-x-auto">
+                        <div className="text-center mb-2"><h2 className="header-title">Performance By Division YTD {mName} 2026</h2></div>
+                        <table className="excel-table">
+                            <thead><tr><th>biz</th><th className="text-left">Division</th><th>YTD {mName} 2026</th><th>Avg YTD 26</th><th>FY 2025</th><th>Avg 2025</th><th>YTD 2025</th><th>Avg YTD 25</th><th>Avg Grwt</th><th>YTD Grwt</th></tr></thead>
+                            <tbody>
+                                {chg.arr.map((r,i)=><tr key={'c'+i}>{i===0&&<td rowSpan={chg.arr.length} className="font-bold bg-white text-center">CHG</td>}<td className="text-left">{r.div}</td><td className="text-right">{formatCurr(r.y26)}</td><td className="text-right">{formatCurr(r.avgYtd26)}</td><td className="text-right">{formatCurr(r.f25)}</td><td className="text-right">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.y25)}</td><td className="text-right">{formatCurr(r.avgYtd25)}</td><td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td><td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td></tr>)}
+                                <tr className="total-row"><td colSpan="2">TOTAL CHG</td><td className="text-right">{formatCurr(chg.tot.y26)}</td><td className="text-right">{formatCurr(chg.tot.avgYtd26)}</td><td className="text-right">{formatCurr(chg.tot.f25)}</td><td className="text-right">{formatCurr(chg.tot.avg25)}</td><td className="text-right">{formatCurr(chg.tot.y25)}</td><td className="text-right">{formatCurr(chg.tot.avgYtd25)}</td><td className={`text-center ${cGrw(chg.tot.avgGrwt)}`}>{fGrw(chg.tot.avgGrwt)}</td><td className={`text-center ${cGrw(chg.tot.ytdGrwt)}`}>{fGrw(chg.tot.ytdGrwt)}</td></tr>
+                                <tr><td colSpan="10" className="border-none h-4"></td></tr>
+                                {phg.arr.map((r,i)=><tr key={'p'+i}>{i===0&&<td rowSpan={phg.arr.length} className="font-bold bg-white text-center">PHG</td>}<td className="text-left">{r.div}</td><td className="text-right">{formatCurr(r.y26)}</td><td className="text-right">{formatCurr(r.avgYtd26)}</td><td className="text-right">{formatCurr(r.f25)}</td><td className="text-right">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.y25)}</td><td className="text-right">{formatCurr(r.avgYtd25)}</td><td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td><td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td></tr>)}
+                                <tr className="total-row"><td colSpan="2">TOTAL PHG</td><td className="text-right">{formatCurr(phg.tot.y26)}</td><td className="text-right">{formatCurr(phg.tot.avgYtd26)}</td><td className="text-right">{formatCurr(phg.tot.f25)}</td><td className="text-right">{formatCurr(phg.tot.avg25)}</td><td className="text-right">{formatCurr(phg.tot.y25)}</td><td className="text-right">{formatCurr(phg.tot.avgYtd25)}</td><td className={`text-center ${cGrw(phg.tot.avgGrwt)}`}>{fGrw(phg.tot.avgGrwt)}</td><td className={`text-center ${cGrw(phg.tot.ytdGrwt)}`}>{fGrw(phg.tot.ytdGrwt)}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="bg-white p-4 shadow-md overflow-x-auto">
+                        <div className="text-center mb-2"><h2 className="header-title">Performance By Cluster/Channel YTD {mName} 2026 (By Business Type)</h2></div>
+                        <table className="excel-table">
+                            <thead>
+                                <tr>
+                                    <th>Biz Type</th>
+                                    <th className="text-left">Cluster</th>
+                                    <th>Avg 2025</th><th>Avg YTD 2025</th><th>Avg YTD 2026</th>
+                                    <th>Avg Growth</th><th>YTD Growth</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {chanCHG.arr.map((r, i) => (
+                                    <tr key={'cchan'+i}>
+                                        {i === 0 && <td rowSpan={chanCHG.arr.length} className="font-bold bg-white text-center">CHG</td>}
+                                        <td className="text-left font-semibold">{r.cluster}</td>
+                                        <td className="text-right">{formatCurr(r.avg25)}</td>
+                                        <td className="text-right">{formatCurr(r.avgYtd25)}</td>
+                                        <td className="text-right text-blue-700 font-semibold">{formatCurr(r.avgYtd26)}</td>
+                                        <td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td>
+                                        <td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td>
+                                    </tr>
+                                ))}
+                                <tr className="total-row">
+                                    <td colSpan="2" className="text-left">TOTAL CHG</td>
+                                    <td className="text-right">{formatCurr(chanCHG.tot.avg25)}</td>
+                                    <td className="text-right">{formatCurr(chanCHG.tot.avgYtd25)}</td>
+                                    <td className="text-right text-blue-800">{formatCurr(chanCHG.tot.avgYtd26)}</td>
+                                    <td className={`text-center ${cGrw(chanCHG.tot.avgGrwt)}`}>{fGrw(chanCHG.tot.avgGrwt)}</td>
+                                    <td className={`text-center ${cGrw(chanCHG.tot.ytdGrwt)}`}>{fGrw(chanCHG.tot.ytdGrwt)}</td>
+                                </tr>
+
+                                <tr><td colSpan="7" className="border-none h-4"></td></tr>
+
+                                {chanPHG.arr.map((r, i) => (
+                                    <tr key={'pchan'+i}>
+                                        {i === 0 && <td rowSpan={chanPHG.arr.length} className="font-bold bg-white text-center">PHG</td>}
+                                        <td className="text-left font-semibold">{r.cluster}</td>
+                                        <td className="text-right">{formatCurr(r.avg25)}</td>
+                                        <td className="text-right">{formatCurr(r.avgYtd25)}</td>
+                                        <td className="text-right text-blue-700 font-semibold">{formatCurr(r.avgYtd26)}</td>
+                                        <td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td>
+                                        <td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td>
+                                    </tr>
+                                ))}
+                                <tr className="total-row">
+                                    <td colSpan="2" className="text-left">TOTAL PHG</td>
+                                    <td className="text-right">{formatCurr(chanPHG.tot.avg25)}</td>
+                                    <td className="text-right">{formatCurr(chanPHG.tot.avgYtd25)}</td>
+                                    <td className="text-right text-blue-800">{formatCurr(chanPHG.tot.avgYtd26)}</td>
+                                    <td className={`text-center ${cGrw(chanPHG.tot.avgGrwt)}`}>{fGrw(chanPHG.tot.avgGrwt)}</td>
+                                    <td className={`text-center ${cGrw(chanPHG.tot.ytdGrwt)}`}>{fGrw(chanPHG.tot.ytdGrwt)}</td>
+                                </tr>
+
+                                <tr className="total-row !bg-yellow-200">
+                                    <td colSpan="2" className="text-left font-black">GRAND TOTAL</td>
+                                    <td className="text-right font-black">{formatCurr(chanGrandTot.avg25)}</td>
+                                    <td className="text-right font-black">{formatCurr(chanGrandTot.avgYtd25)}</td>
+                                    <td className="text-right font-black text-blue-900">{formatCurr(chanGrandTot.avgYtd26)}</td>
+                                    <td className={`text-center font-black ${cGrw(chanGrandTot.avgGrwt)}`}>{fGrw(chanGrandTot.avgGrwt)}</td>
+                                    <td className={`text-center font-black ${cGrw(chanGrandTot.ytdGrwt)}`}>{fGrw(chanGrandTot.ytdGrwt)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // MENU 2: PARETO BRAND (FIXED 2025 READING)
+        // ==========================================
+        const ParetoBrandView = ({ apiData, month }) => {
+            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            const sales2026 = apiData.sales2026 || [];
+            const sales2025 = apiData.sales2025 || [];
+
+            const m = parseInt(month) || 1;
+            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const mName = mNames[m-1];
+
+            const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total', 'ach'];
+            const kBulan = ['bulan', 'month'];
+            const kDiv = ['division', 'divisi'];
+            const kBrand = ['brand', 'sub_brand', 'sub brand']; 
+
+            let bMap = { PHG:{}, CHG:{} };
+
+            const processPareto = (r, is2025) => {
+                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                // Menggunakan fungsi cerdas global agar 2025 yang tidak punya kolom business bisa ditebak dari Division
+                let biz = detectBizType(r);
+                let div = String(getVal(r, kDiv) || 'UNASSIGNED').toUpperCase();
+                let brand = String(getVal(r, kBrand) || '').trim().toUpperCase();
+                let sales = parseNum(getVal(r, kSales));
+
+                // Abaikan brand kosong agar tidak merusak Pareto
+                if (!brand || brand === 'UNASSIGNED' || brand === 'UNDEFINED' || brand === '0' || brand === '-') return;
+
+                if(biz === 'PHG' || biz === 'CHG') {
+                    if(!bMap[biz][brand]) bMap[biz][brand] = {div, y26:0, y25:0, f25:0};
+                    if(is2025) {
+                        bMap[biz][brand].f25 += sales; // Total Jan-Des 2025 (Full Year)
+                        if(bln <= m) bMap[biz][brand].y25 += sales; // Total Jan s/d bulan terpilih 2025
+                    } else {
+                        if(bln <= m) bMap[biz][brand].y26 += sales; // Total Jan s/d bulan terpilih 2026
+                    }
+                }
+            };
+
+            sales2025.forEach(r => processPareto(r, true));
+            sales2026.forEach(r => processPareto(r, false));
+
+            const buildParetoBrand = (bz) => {
+                return Object.keys(bMap[bz]).map(k => {
+                    let d = bMap[bz][k];
+                    let avgYtd26 = d.y26 / m; 
+                    let avg25 = d.f25 / 12; // Dibagi 12 mutlak untuk rata-rata seluruh FY 2025
+                    let avgYtd25 = d.y25 / m; // Dibagi mutlak sesuai bulan berjalan
+                    return {
+                        brand: k, div: d.div, y26: d.y26, avgYtd26, f25: d.f25, avg25, y25: d.y25, avgYtd25,
+                        avgGrwt: calcGrowth(avgYtd26, avg25), ytdGrwt: calcGrowth(d.y26, d.y25)
+                    };
+                }).sort((a,b) => b.y26 - a.y26).slice(0, 10);
+            };
+            
+            const paretoCHG = buildParetoBrand('CHG'); 
+            const paretoPHG = buildParetoBrand('PHG');
+
+            return (
+                <div className="space-y-6 animate-fade-in pb-12">
+                    <div className="bg-white p-4 border shadow-md overflow-x-auto">
+                        <div className="text-center mb-2"><h2 className="header-title">Top 10 Pareto Brand by Business Type YTD {mName} 2026</h2></div>
+                        <table className="excel-table">
+                            <thead>
+                                <tr>
+                                    <th>Business</th><th className="text-left">Division</th><th className="text-left">Brand</th>
+                                    <th>Sum of FY 2025</th><th>Avg 2025</th>
+                                    <th>Sum of YTD 2025</th><th>Avg YTD 2025</th>
+                                    <th>Sum of YTD 2026</th><th>Avg YTD 2026</th>
+                                    <th>Avg Growth</th><th>YTD Growth</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paretoCHG.map((r, i) => (
+                                    <tr key={'pchg'+i} className="hover:bg-gray-50">
+                                        <td className="text-center bg-gray-100 font-bold text-gray-700">CHG</td>
+                                        <td className="text-left text-gray-600">{r.div}</td>
+                                        <td className="text-left font-black text-gray-800">{r.brand}</td>
+                                        <td className="text-right">{formatCurr(r.f25)}</td>
+                                        <td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td>
+                                        <td className="text-right">{formatCurr(r.y25)}</td>
+                                        <td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td>
+                                        <td className="text-right font-black text-blue-700">{formatCurr(r.y26)}</td>
+                                        <td className="text-right bg-blue-50 font-bold">{formatCurr(r.avgYtd26)}</td>
+                                        <td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td>
+                                        <td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td>
+                                    </tr>
+                                ))}
+                                <tr><td colSpan="11" className="border-none h-4"></td></tr>
+                                {paretoPHG.map((r, i) => (
+                                    <tr key={'pphg'+i} className="hover:bg-gray-50">
+                                        <td className="text-center bg-gray-100 font-bold text-gray-700">PHG</td>
+                                        <td className="text-left text-gray-600">{r.div}</td>
+                                        <td className="text-left font-black text-gray-800">{r.brand}</td>
+                                        <td className="text-right">{formatCurr(r.f25)}</td>
+                                        <td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td>
+                                        <td className="text-right">{formatCurr(r.y25)}</td>
+                                        <td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td>
+                                        <td className="text-right font-black text-blue-700">{formatCurr(r.y26)}</td>
+                                        <td className="text-right bg-blue-50 font-bold">{formatCurr(r.avgYtd26)}</td>
+                                        <td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td>
+                                        <td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // MENU 3: BIG CITY PARETO
+        // ==========================================
+        const CityView = ({ apiData, month }) => {
+            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            const sales2026 = apiData.sales2026 || [];
+            const sales2025 = apiData.sales2025 || [];
+
+            const m = parseInt(month) || 1;
+
+            const kSales = ['sales', 'value', 'amount', 'total'];
+            const kBulan = ['bulan', 'month'];
+            const kCity = ['city', 'kota', 'kabupaten', 'area']; 
+            const kCustCode = ['customer code', 'cust code', 'kode pelanggan'];
+
+            let cMap = {}; 
+
+            const processCity = (r, is2025) => {
+                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                let city = String(getVal(r, kCity) || '').toUpperCase();
+                let sales = parseNum(getVal(r, kSales));
+                let cust = getVal(r, kCustCode);
+
+                if(city && city !== 'UNDEFINED' && city !== '') {
+                    if(!cMap[city]) cMap[city] = { y26:0, y25:0, f25:0, reach: new Set() };
+                    if(cust && sales > 0) cMap[city].reach.add(cust); 
+
+                    if(is2025) {
+                        cMap[city].f25 += sales;
+                        if(bln <= m) cMap[city].y25 += sales;
+                    } else {
+                        if(bln <= m) cMap[city].y26 += sales;
+                    }
+                }
+            };
+
+            sales2025.forEach(r => processCity(r, true));
+            sales2026.forEach(r => processCity(r, false));
+
+            let totalCityY26 = 0;
+            let cityArr = Object.keys(cMap).map(k => {
+                let d = cMap[k];
+                totalCityY26 += d.y26;
+                return {
+                    city: k, y26: d.y26, avg25: d.f25/12, 
+                    avgGrwt: calcGrowth(d.y26/m, d.f25/12), ytdGrwt: calcGrowth(d.y26, d.y25),
+                    reach: d.reach.size
+                };
+            }).sort((a,b) => b.y26 - a.y26).slice(0, 7); 
+
+            let top7Share = totalCityY26 > 0 ? Math.round((cityArr.reduce((a,c)=>a+c.y26, 0) / totalCityY26) * 100) : 0;
+            let totalAvg25All = Object.keys(cMap).reduce((a,c)=>a+cMap[c].f25,0)/12;
+
+            return (
+                <div className="space-y-6 animate-fade-in pb-12">
+                    <div className="bg-white p-4 border shadow-md">
+                        <div className="text-center mb-6"><h2 className="header-title !text-xl !px-20">Big Pareto City/Kabupaten in Papua</h2></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {cityArr.length === 0 ? <p className="text-center col-span-4 py-4">Data kota tidak ditemukan.</p> : null}
+                            
+                            {cityArr.map((r, i) => {
+                                let share = totalCityY26 > 0 ? Math.round((r.y26/totalCityY26)*100) : 0;
+                                return (
+                                    <div key={i} className="city-card">
+                                        <div className="city-logo">🌆</div>
+                                        <div className="city-info">
+                                            <div className="city-title">{r.city}</div>
+                                            <div className="city-stat"><span>Buss. Contr:</span> <b>{share}%</b></div>
+                                            <div className="city-stat"><span>Avg 2025:</span> <b>Rp {formatCurr(r.avg25)}</b></div>
+                                            <div className="city-stat"><span>Avg Growth:</span> <b className={cGrw(r.avgGrwt)}>{fGrw(r.avgGrwt)}</b></div>
+                                            <div className="city-stat"><span>YTD Growth:</span> <b className={cGrw(r.ytdGrwt)}>{fGrw(r.ytdGrwt)}</b></div>
+                                            <div className="city-stat"><span>Reach:</span> <b>{r.reach} Outlets</b></div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            <div className="city-card !border-blue-600 !bg-blue-50 !flex-col !justify-center !text-center">
+                                <h3 className="text-lg font-black text-blue-900 mb-2">SUMMARY</h3>
+                                <p className="text-sm font-semibold text-gray-800">
+                                    7 Kabupaten/Kota from {Object.keys(cMap).length},<br/>
+                                    Contribute <span className="text-blue-600 font-black text-lg">{top7Share}%</span> share<br/>
+                                    business contribution with<br/>
+                                    Avg/month Rp {formatCurr(totalAvg25All)} in 2026
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-[#0f172a] p-8 border shadow-md relative overflow-hidden rounded-xl">
+                        <div className="text-center mb-6 relative z-10"><h2 className="header-title !bg-blue-600 !text-white !border-white">COMMAND CENTER: PAPUA COVERAGE</h2></div>
+                        <div className="w-full h-[400px] relative mx-auto flex items-center justify-center">
+                            <svg viewBox="0 0 1000 500" className="w-full h-full text-blue-900 opacity-60 absolute drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                                <path fill="currentColor" stroke="#3b82f6" strokeWidth="2" d="M 120,220 C 150,200 200,180 250,210 C 280,230 250,280 200,320 C 150,350 100,300 120,220 Z" />
+                                <path fill="currentColor" stroke="#3b82f6" strokeWidth="2" d="M 230,230 C 280,200 350,150 450,180 C 550,210 650,200 750,250 C 850,300 900,350 850,400 C 750,450 600,420 500,400 C 400,380 300,420 250,350 C 220,300 210,260 230,230 Z" />
+                            </svg>
+                            <div className="absolute top-[40%] left-[20%] text-white text-xs font-bold text-center"><div className="w-4 h-4 bg-yellow-400 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-yellow-400 animate-ping-map"></div></div>SORONG</div>
+                            <div className="absolute top-[65%] left-[25%] text-white text-xs font-bold text-center"><div className="w-4 h-4 bg-red-500 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-red-500 animate-ping-map"></div></div>MANOKWARI</div>
+                            <div className="absolute top-[30%] left-[40%] text-white text-xs font-bold text-center"><div className="w-4 h-4 bg-green-400 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-green-400 animate-ping-map"></div></div>BIAK</div>
+                            <div className="absolute top-[45%] left-[55%] text-white text-xs font-bold text-center"><div className="w-4 h-4 bg-cyan-400 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-cyan-400 animate-ping-map"></div></div>JAYAPURA</div>
+                            <div className="absolute top-[70%] left-[65%] text-white text-xs font-bold text-center"><div className="w-5 h-5 bg-orange-500 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-orange-500 animate-ping-map"></div></div>MIMIKA</div>
+                            <div className="absolute top-[80%] left-[85%] text-white text-xs font-bold text-center"><div className="w-6 h-6 bg-pink-500 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-pink-500 animate-ping-map"></div></div>MERAUKE</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // MENU 4: BUYING OUTLETS ANALYSIS
+        // ==========================================
+        const OutletAnalysisView = ({ apiData, month }) => {
+            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            const sales2026 = apiData.sales2026 || [];
+            const sales2025 = apiData.sales2025 || [];
+
+            const m = parseInt(month) || 1;
+            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const mName = mNames[m-1];
+            
+            const [viewMode, setViewMode] = useState('MTD'); 
+            
+            const kSales = ['sales', 'value', 'amount'];
+            const kBulan = ['bulan', 'month'];
+            const kCustCode = ['customer code', 'kode pelanggan'];
+            const kCustName = ['customer name', 'nama pelanggan'];
+            const kDist = ['distributor', 'dist']; 
+            
+            let chartData = Array.from({length:12}, (_,i)=>({ name:mNames[i], cust26: new Set(), cust25: new Set(), MTD:0, LY_MTD:0 }));
+            
+            let out25_MTD = new Map(); let out26_MTD = new Set();
+            let out25_YTD = new Map(); let out26_YTD = new Set();
+
+            sales2025.forEach(r => {
+                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                let sales = parseNum(getVal(r, kSales));
+                let cCode = getVal(r, kCustCode);
+                let cName = getVal(r, kCustName) || cCode;
+                let cDist = String(getVal(r, kDist) || 'OTHERS').toUpperCase();
+                
+                if(cCode && sales > 0) {
+                    chartData[bln-1].cust25.add(cCode);
+                    if(bln === m) {
+                        if(!out25_MTD.has(cCode)) out25_MTD.set(cCode, {name: cName, dist: cDist, sales: 0});
+                        out25_MTD.get(cCode).sales += sales;
+                    }
+                    if(bln <= m) {
+                        if(!out25_YTD.has(cCode)) out25_YTD.set(cCode, {name: cName, dist: cDist, sales: 0});
+                        out25_YTD.get(cCode).sales += sales;
+                    }
+                }
+            });
+
+            sales2026.forEach(r => {
+                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                let sales = parseNum(getVal(r, kSales));
+                let cCode = getVal(r, kCustCode);
+                
+                if(cCode && sales > 0) {
+                    chartData[bln-1].cust26.add(cCode);
+                    if(bln === m) out26_MTD.add(cCode);
+                    if(bln <= m) out26_YTD.add(cCode);
+                }
+            });
+            
+            chartData.forEach(d => { d.MTD = d.cust26.size; d.LY_MTD = d.cust25.size; });
+            const currentMtdVal = chartData[m-1] ? chartData[m-1].MTD : 0;
+            const lyMtdVal = chartData[m-1] ? chartData[m-1].LY_MTD : 0;
+            const variance = currentMtdVal - lyMtdVal;
+
+            let lossAPL = []; let totalAPL = 0;
+            let lossKFT = []; let totalKFT = 0;
+            
+            const processLossList = (map25, set26) => {
+                for (let [code, data] of map25.entries()) {
+                    if (!set26.has(code)) { 
+                        if(data.dist.includes('APL') || data.dist.includes('ANUGERAH')) {
+                            lossAPL.push({code, name: data.name, lostSales: data.sales});
+                            totalAPL += data.sales;
+                        } else {
+                            lossKFT.push({code, name: data.name, lostSales: data.sales});
+                            totalKFT += data.sales;
+                        }
+                    }
+                }
+            };
+
+            if(viewMode === 'MTD') processLossList(out25_MTD, out26_MTD);
+            else processLossList(out25_YTD, out26_YTD);
+            
+            lossAPL.sort((a,b) => b.lostSales - a.lostSales);
+            lossKFT.sort((a,b) => b.lostSales - a.lostSales);
+
+            return (
+                <div className="space-y-6 animate-fade-in pb-12">
+                    <div className="bg-white p-4 shadow-md">
+                        <div className="text-center mb-2"><h2 className="header-title">Performance Buying Outlet</h2></div>
+                        <div className="flex flex-col md:flex-row gap-4 mt-4">
+                            <div className="w-full md:w-1/3 flex flex-col gap-4">
+                                <div className="border p-6 text-center shadow-sm">
+                                    <h3 className="text-5xl font-light text-gray-800 mb-2">{currentMtdVal}</h3>
+                                    <p className="text-sm text-gray-500 font-bold uppercase tracking-wider">No. Of Buying Outlets ({mName} 2026)</p>
+                                </div>
+                                <div className="border p-4 flex items-center justify-center gap-4 shadow-sm bg-gray-50">
+                                    <span className={`text-4xl ${variance < 0 ? 'text-red-alert' : 'text-green-good'}`}>{variance < 0 ? '▼' : '▲'}</span>
+                                    <div>
+                                        <h3 className={`text-3xl font-black ${variance < 0 ? 'text-red-alert' : 'text-green-good'}`}>{Math.abs(variance)}</h3>
+                                        <p className="text-xs text-gray-500 font-bold">vs Last Year ({mName} 2025)</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="w-full md:w-2/3 min-h-[300px] border p-4 shadow-sm">
+                                <ResponsiveContainer width="100%" height={280}>
+                                    <LineChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" tick={{fontSize: 12}} />
+                                        <YAxis tick={{fontSize: 12}} />
+                                        <Tooltip contentStyle={{fontSize: '12px'}} />
+                                        <Legend verticalAlign="top" height={36} wrapperStyle={{fontSize: '13px'}} iconType="circle"/>
+                                        <Line type="monotone" dataKey="MTD" name="MTD 2026" stroke="#3b82f6" strokeWidth={3} dot={{r: 5}} label={{ position: 'top', fontSize: 11, fill: '#3b82f6', fontWeight: 'bold' }} />
+                                        <Line type="monotone" dataKey="LY_MTD" name="LY MTD 2025" stroke="#1e3a8a" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-4 border shadow-md">
+                        <div className="flex flex-wrap justify-between items-center mb-4 border-b pb-4 gap-2">
+                            <h2 className="header-title !mb-0">Lost Sales Analysis (Pemisahan Distributor)</h2>
+                            <div className="flex bg-gray-200 rounded p-1">
+                                <button onClick={() => setViewMode('MTD')} className={`px-6 py-1 font-bold rounded text-xs md:text-sm ${viewMode==='MTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>View MTD ({mName})</button>
+                                <button onClick={() => setViewMode('YTD')} className={`px-6 py-1 font-bold rounded text-xs md:text-sm ${viewMode==='YTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>View YTD</button>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-red-50 border border-red-200 p-4 mb-4 text-center rounded">
+                            <p className="text-sm text-red-800">Total Potensi Loss Keseluruhan <b>{viewMode}</b>:</p>
+                            <p className="text-3xl font-black text-red-600">Rp {formatCurr(totalAPL + totalKFT)}</p>
+                            <p className="text-xs text-red-700 mt-1">
+                                {viewMode === 'MTD' ? `Daftar outlet yang di bulan ${mName} 2025 transaksi, tapi di bulan ${mName} 2026 BELUM transaksi.` : `Daftar outlet yang dari Jan-${mName} 2025 transaksi, tapi dari Jan-${mName} 2026 BELUM transaksi sama sekali.`}
+                            </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="border border-gray-300">
+                                <div className="bg-blue-100 p-2 text-center border-b font-bold text-blue-900">Distributor: APL<br/><span className="text-red-600">Loss: Rp {formatCurr(totalAPL)}</span></div>
+                                <div className="overflow-y-auto max-h-[400px]">
+                                    <table className="excel-table w-full border-0">
+                                        <thead className="sticky top-0 shadow"><tr><th>Cust Code</th><th className="text-left">Customer Name</th><th className="text-right">Lost Sales (Rp)</th></tr></thead>
+                                        <tbody>
+                                            {lossAPL.length === 0 ? <tr><td colSpan="3" className="text-center py-4">Semua pelanggan APL aman bertransaksi!</td></tr> : null}
+                                            {lossAPL.map((r, i) => <tr key={i}><td className="text-center">{r.code}</td><td className="text-left font-semibold">{r.name}</td><td className="text-right font-black text-red-600">{formatCurr(r.lostSales)}</td></tr>)}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div className="border border-gray-300">
+                                <div className="bg-blue-100 p-2 text-center border-b font-bold text-blue-900">Distributor: KFT & Others<br/><span className="text-red-600">Loss: Rp {formatCurr(totalKFT)}</span></div>
+                                <div className="overflow-y-auto max-h-[400px]">
+                                    <table className="excel-table w-full border-0">
+                                        <thead className="sticky top-0 shadow"><tr><th>Cust Code</th><th className="text-left">Customer Name</th><th className="text-right">Lost Sales (Rp)</th></tr></thead>
+                                        <tbody>
+                                            {lossKFT.length === 0 ? <tr><td colSpan="3" className="text-center py-4">Semua pelanggan KFT aman bertransaksi!</td></tr> : null}
+                                            {lossKFT.map((r, i) => <tr key={i}><td className="text-center">{r.code}</td><td className="text-left font-semibold">{r.name}</td><td className="text-right font-black text-red-600">{formatCurr(r.lostSales)}</td></tr>)}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // MENU 5: NPD MONITORING (WITH TOTAL SUMMARY ROW)
+        // ==========================================
+        const NPDView = ({ apiData }) => {
+            if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            const sales2026 = apiData.sales2026 || [];
+            const sales2025 = apiData.sales2025 || [];
+
+            const kName = ['product name', 'nama produk'];
+            const kBulan = ['bulan', 'month'];
+            const kSales = ['sales', 'value', 'amount'];
+            const kCust = ['customer code', 'cust code'];
+            
+            const npdList = [ "ENERVON FIZZ @8 TAB", "ENERVON KIDS @21 TAB", "NATUR-E ADVANCED INT UL SUN PROTECT 40ML", "NATUR-E COLLA BITES", "NATUR-E COLLAFIBE", "NATUR-E WHITE RAD UL SUN PROTECTION 40ML", "PARATUSIN DMP TABLET", "PARATUSIN PSE DMP SYRUP", "VICEE FUN BERRIES GUMMY (DV)", "VICEE FUN TROPICAL TANGO GUMMY (DV)" ];
+            
+            let npdMap = {}; 
+            npdList.forEach(name => { npdMap[name.toUpperCase()] = { s25: {}, s26: {}, cust25: {}, cust26: {} }; });
+            
+            const processNPD = (dataRow, is2025) => {
+                let name = String(getVal(dataRow, kName) || '').trim().toUpperCase();
+                let matchedNPD = Object.keys(npdMap).find(k => name.includes(k) || k.includes(name));
+                
+                if(matchedNPD) {
+                    let bln = parseInt(getVal(dataRow, kBulan));
+                    let sales = parseNum(getVal(dataRow, kSales));
+                    let cust = getVal(dataRow, kCust);
+                    
+                    if (bln >= 1 && bln <= 12) {
+                        if (is2025) {
+                            npdMap[matchedNPD].s25[bln] = (npdMap[matchedNPD].s25[bln] || 0) + sales;
+                            if (cust && sales > 0) {
+                                if(!npdMap[matchedNPD].cust25[bln]) npdMap[matchedNPD].cust25[bln] = new Set();
+                                npdMap[matchedNPD].cust25[bln].add(cust);
+                            }
+                        } else {
+                            npdMap[matchedNPD].s26[bln] = (npdMap[matchedNPD].s26[bln] || 0) + sales;
+                            if (cust && sales > 0) {
+                                if(!npdMap[matchedNPD].cust26[bln]) npdMap[matchedNPD].cust26[bln] = new Set();
+                                npdMap[matchedNPD].cust26[bln].add(cust);
+                            }
+                        }
+                    }
+                }
+            };
+            
+            sales2025.forEach(r => processNPD(r, true));
+            sales2026.forEach(r => processNPD(r, false));
+            
+            let npdArr = Object.keys(npdMap).map(k => {
+                let d = npdMap[k];
+                let t25 = [8,9,10,11,12].reduce((sum, m) => sum + (d.s25[m]||0), 0);
+                let t26 = [1,2,3,4,5,6,7,8,9,10,11,12].reduce((sum, m) => sum + (d.s26[m]||0), 0);
+                let ao25_tot = [8,9,10,11,12].reduce((sum, m) => sum + (d.cust25[m] ? d.cust25[m].size : 0), 0);
+                let ao26_tot = [1,2,3,4,5,6,7,8,9,10,11,12].reduce((sum, m) => sum + (d.cust26[m] ? d.cust26[m].size : 0), 0);
+                return { name: k, data: d, t25, t26, grand: t25+t26, ao25_tot, ao26_tot, ao_grand: ao25_tot+ao26_tot };
+            });
+
+            // Kalkulasi Total Summary per Bulan
+            let totOmset = { s25: {}, s26: {}, t25: 0, t26: 0, grand: 0 };
+            let totAO = { s25: {}, s26: {}, t25: 0, t26: 0, grand: 0 };
+            [8,9,10,11,12].forEach(m => { totOmset.s25[m]=0; totAO.s25[m]=0; });
+            [1,2,3,4,5,6,7,8,9,10,11,12].forEach(m => { totOmset.s26[m]=0; totAO.s26[m]=0; });
+
+            npdArr.forEach(r => {
+                [8,9,10,11,12].forEach(m => {
+                    totOmset.s25[m] += (r.data.s25[m] || 0);
+                    totAO.s25[m] += (r.data.cust25[m] ? r.data.cust25[m].size : 0);
+                });
+                [1,2,3,4,5,6,7,8,9,10,11,12].forEach(m => {
+                    totOmset.s26[m] += (r.data.s26[m] || 0);
+                    totAO.s26[m] += (r.data.cust26[m] ? r.data.cust26[m].size : 0);
+                });
+                totOmset.t25 += r.t25; totOmset.t26 += r.t26; totOmset.grand += r.grand;
+                totAO.t25 += r.ao25_tot; totAO.t26 += r.ao26_tot; totAO.grand += r.ao_grand;
+            });
+
+            return (
+                 <div className="space-y-8 animate-fade-in pb-12">
+                    <div className="bg-white p-4 border shadow-md overflow-x-auto">
+                        <div className="text-center mb-2"><h2 className="header-title">NPD Monitoring Performance (Omset)</h2></div>
+                        <table className="excel-table npd-table w-[1200px] max-w-none">
+                            <thead>
+                                <tr>
+                                    <th rowSpan="2" className="text-left bg-white min-w-[200px]">Product Name</th>
+                                    <th colSpan="5" className="bg-2025 text-center border-b-2 border-black">2025</th>
+                                    <th rowSpan="2" className="bg-2025 font-bold">2025 Total</th>
+                                    <th colSpan="12" className="bg-2026 text-center border-b-2 border-black">2026</th>
+                                    <th rowSpan="2" className="bg-2026 font-bold">2026 Total</th>
+                                    <th rowSpan="2" className="bg-grand">Grand Total</th>
+                                </tr>
+                                <tr>
+                                    <th className="bg-2025">Aug</th><th className="bg-2025">Sep</th><th className="bg-2025">Oct</th><th className="bg-2025">Nov</th><th className="bg-2025">Dec</th>
+                                    <th className="bg-2026">Jan</th><th className="bg-2026">Feb</th><th className="bg-2026">Mar</th><th className="bg-2026">Apr</th><th className="bg-2026">May</th><th className="bg-2026">Jun</th><th className="bg-2026">Jul</th><th className="bg-2026">Aug</th><th className="bg-2026">Sep</th><th className="bg-2026">Oct</th><th className="bg-2026">Nov</th><th className="bg-2026">Dec</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {npdArr.map((r, i) => (
+                                    <tr key={i} className="hover:bg-gray-50">
+                                        <td className="font-semibold">{r.name}</td>
+                                        {[8,9,10,11,12].map(m => <td key={'25'+m}>{r.data.s25[m] ? formatCurr(r.data.s25[m]) : ''}</td>)}
+                                        <td className="font-bold bg-yellow-50">{r.t25 > 0 ? formatCurr(r.t25) : ''}</td>
+                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={'26'+m}>{r.data.s26[m] ? formatCurr(r.data.s26[m]) : ''}</td>)}
+                                        <td className="font-bold bg-orange-50">{r.t26 > 0 ? formatCurr(r.t26) : ''}</td>
+                                        <td className="bg-green-50 font-bold">{r.grand > 0 ? formatCurr(r.grand) : ''}</td>
+                                    </tr>
+                                ))}
+                                <tr className="total-row bg-yellow-300">
+                                    <td className="text-left font-black uppercase text-center">TOTAL SUMMARY</td>
+                                    {[8,9,10,11,12].map(m => <td key={'t25'+m}>{totOmset.s25[m] > 0 ? formatCurr(totOmset.s25[m]) : ''}</td>)}
+                                    <td className="font-black bg-yellow-400">{formatCurr(totOmset.t25)}</td>
+                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={'t26'+m}>{totOmset.s26[m] > 0 ? formatCurr(totOmset.s26[m]) : ''}</td>)}
+                                    <td className="font-black bg-orange-400">{formatCurr(totOmset.t26)}</td>
+                                    <td className="font-black bg-green-400">{formatCurr(totOmset.grand)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div className="bg-white p-4 border shadow-md overflow-x-auto">
+                        <div className="text-center mb-2"><h2 className="header-title">Monitoring AO (Active Outlets)</h2></div>
+                        <table className="excel-table npd-table w-[1200px] max-w-none">
+                            <thead>
+                                <tr>
+                                    <th rowSpan="2" className="text-left bg-white min-w-[200px]">Product Name</th>
+                                    <th colSpan="5" className="bg-2025 text-center border-b-2 border-black">2025</th>
+                                    <th rowSpan="2" className="bg-2025 font-bold">2025 Total</th>
+                                    <th colSpan="12" className="bg-2026 text-center border-b-2 border-black">2026</th>
+                                    <th rowSpan="2" className="bg-2026 font-bold">2026 Total</th>
+                                    <th rowSpan="2" className="bg-grand">Grand Total</th>
+                                </tr>
+                                <tr>
+                                    <th className="bg-2025">Aug</th><th className="bg-2025">Sep</th><th className="bg-2025">Oct</th><th className="bg-2025">Nov</th><th className="bg-2025">Dec</th>
+                                    <th className="bg-2026">Jan</th><th className="bg-2026">Feb</th><th className="bg-2026">Mar</th><th className="bg-2026">Apr</th><th className="bg-2026">May</th><th className="bg-2026">Jun</th><th className="bg-2026">Jul</th><th className="bg-2026">Aug</th><th className="bg-2026">Sep</th><th className="bg-2026">Oct</th><th className="bg-2026">Nov</th><th className="bg-2026">Dec</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {npdArr.map((r, i) => (
+                                    <tr key={i} className="hover:bg-gray-50">
+                                        <td className="font-semibold">{r.name}</td>
+                                        {[8,9,10,11,12].map(m => <td key={'ao25'+m} className="text-center">{r.data.cust25[m] ? r.data.cust25[m].size : ''}</td>)}
+                                        <td className="font-bold bg-yellow-50 text-center">{r.ao25_tot > 0 ? r.ao25_tot : ''}</td>
+                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={'ao26'+m} className="text-center">{r.data.cust26[m] ? r.data.cust26[m].size : ''}</td>)}
+                                        <td className="font-bold bg-orange-50 text-center">{r.ao26_tot > 0 ? r.ao26_tot : ''}</td>
+                                        <td className="bg-green-50 font-bold text-center text-green-700">{r.ao_grand > 0 ? r.ao_grand : ''}</td>
+                                    </tr>
+                                ))}
+                                <tr className="total-row bg-yellow-300">
+                                    <td className="text-left font-black uppercase text-center">TOTAL SUMMARY</td>
+                                    {[8,9,10,11,12].map(m => <td key={'aot25'+m} className="text-center">{totAO.s25[m] > 0 ? totAO.s25[m] : ''}</td>)}
+                                    <td className="font-black bg-yellow-400 text-center">{totAO.t25}</td>
+                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={'aot26'+m} className="text-center">{totAO.s26[m] > 0 ? totAO.s26[m] : ''}</td>)}
+                                    <td className="font-black bg-orange-400 text-center">{totAO.t26}</td>
+                                    <td className="font-black bg-green-400 text-center text-green-900">{totAO.grand}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                 </div>
+            );
+        };
+
+        // ==========================================
+        // MENU 6: SALES FORECAST (SCD & SUMMARY)
+        // ==========================================
+        const ForecastView = ({ apiData, month }) => {
+            if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            const sales2026 = apiData.sales2026 || [];
+            const target2026 = apiData.target2026 || [];
+            const stock = apiData.stock || [];
+
+            const m = parseInt(month) || 1;
+            const [statusFilter, setStatusFilter] = useState('ALL');
+            const [distFilter, setDistFilter] = useState('ALL');
+            
+            const tableData = useMemo(() => {
+                const kCode = ['item code', 'kode barang', 'material code'];
+                const kName = ['product name', 'nama produk'];
+                const kSales = ['sum of sales', 'sales', 'value', 'amount'];
+                const kHna = ['hna', 'harga dasar']; 
+                const kQty = ['qty', 'quantity'];
+                const kStockValue = ['jumlah stock', 'stock unit', 'stock qty', 'stok', 'stock', 'sisa']; 
+                const kDist = ['distributor', 'dist', 'principal', 'rayon', 'mitra'];
+                
+                // Helper Grup Dist Cerdas (Semua yang bukan APL masuk ke KFT/Others)
+                const getDistGroup = (dStr) => {
+                    let d = String(dStr || '').toUpperCase();
+                    if(!d || d === 'UNDEFINED' || d === 'UNKNOWN') return 'KFT & OTHERS'; 
+                    if(d.includes('APL') || d.includes('ANUGERAH')) return 'APL';
+                    return 'KFT & OTHERS';
+                };
+
+                let itemData = {};
+
+                // 1. Process Target (Ambil Full Year Target)
+                target2026.forEach(r => {
+                    let code = getVal(r, kCode);
+                    let name = getVal(r, kName);
+                    if (!name && !code) return; 
+                    let dist = getDistGroup(getVal(r, kDist));
+                    let targetRp = 0;
+                    let blnRaw = getVal(r, ['bulan', 'month', 'bln']);
+                    let bln = parseInt(blnRaw);
+                    
+                    if (blnRaw && !isNaN(bln)) {
+                         targetRp += parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                    } else {
+                         let foundMonthly = false;
+                         ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach(mon => {
+                             let v = parseNum(getVal(r, [`quota ${mon}`, `target ${mon}`, `sum of quota ${mon}`]));
+                             if (v > 0) { targetRp += v; foundMonthly = true; }
+                         });
+                         if (!foundMonthly) targetRp += parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                    }
+                    
+                    let key = dist + '_' + (name || code);
+                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetRp:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
+                    itemData[key].targetRp += targetRp;
+                });
+
+                // 2. Process Sales
+                sales2026.forEach(r => {
+                    let bln = parseInt(getVal(r, ['bulan', 'month', 'bln']));
+                    if(!bln || bln > m) return;
+                    
+                    let code = getVal(r, kCode);
+                    let name = getVal(r, kName);
+                    if (!name && !code) return;
+                    let dist = getDistGroup(getVal(r, kDist));
+                    let salesVal = parseNum(getVal(r, kSales));
+                    let salesQty = parseNum(getVal(r, kQty));
+                    let hnaVal = parseNum(getVal(r, kHna));
+
+                    let key = dist + '_' + (name || code);
+                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetRp:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
+                    
+                    itemData[key].ytdSalesRp += salesVal;
+                    itemData[key].ytdQty += salesQty;
+                    if(hnaVal > 0) itemData[key].lastHna = hnaVal;
+                });
+
+                // 3. Process Stock
+                stock.forEach(r => {
+                    let code = getVal(r, kCode);
+                    let name = getVal(r, kName);
+                    if (!name && !code) return;
+                    let dist = getDistGroup(getVal(r, kDist));
+                    let stockUnit = parseNum(getVal(r, kStockValue));
+                    let hnaVal = parseNum(getVal(r, kHna));
+
+                    let key = dist + '_' + (name || code);
+                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetRp:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
+
+                    itemData[key].stockUnit += stockUnit;
+                    if(hnaVal > 0) itemData[key].lastHna = hnaVal;
+                });
+
+                // 4. Hitung SCD & Estimasi Akhir Tahun
+                return Object.values(itemData).map(d => {
+                    let estimatedPrice = d.lastHna > 0 ? d.lastHna : ((d.ytdQty > 0 && d.ytdSalesRp > 0) ? (d.ytdSalesRp / d.ytdQty) : 10000);
+                    
+                    let avgMonthlySalesUnit = d.ytdQty > 0 ? (d.ytdQty / m) : ((d.ytdSalesRp / estimatedPrice) / m);
+                    let avgDailySalesUnit = avgMonthlySalesUnit / 30;
+                    
+                    let scd = avgDailySalesUnit > 0 ? Math.round(d.stockUnit / avgDailySalesUnit) : (d.stockUnit > 0 ? 999 : 0);
+                    let targetStockUnit = avgDailySalesUnit * 60; // Standard 60 Hari
+                    let requiredStockUnit = d.stockUnit < targetStockUnit ? Math.round(targetStockUnit - d.stockUnit) : 0;
+                    
+                    let status = scd > 90 ? 'Overstock' : (scd < 30 ? 'Understock' : 'Healthy');
+                    let color = scd > 90 ? 'text-red-600' : (scd < 30 ? 'text-orange-500' : 'text-green-600');
+
+                    // Kalkulasi Value (Rp)
+                    let stockValue = d.stockUnit * estimatedPrice;
+                    let requiredStockValue = requiredStockUnit * estimatedPrice;
+
+                    // Kalkulasi Est Beli Akhir Tahun
+                    let targetFYUnit = d.targetRp > 0 ? (d.targetRp / estimatedPrice) : 0;
+                    let remainingTargetUnit = targetFYUnit - d.ytdQty;
+                    let orderForEOY = remainingTargetUnit > d.stockUnit ? Math.round(remainingTargetUnit - d.stockUnit) : 0;
+                    let estEOYValue = orderForEOY * estimatedPrice;
+
+                    return { 
+                        ...d, estimatedPrice, avgMonthlySalesUnit, scd, requiredStockUnit, status, color,
+                        stockValue, requiredStockValue, orderForEOY, estEOYValue
+                    };
+                }).sort((a,b) => b.scd - a.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetRp > 0);
+            }, [sales2026, target2026, stock, m]);
+
+            const filteredData = tableData.filter(r => 
+                (statusFilter === 'ALL' || r.status.toUpperCase() === statusFilter) &&
+                (distFilter === 'ALL' || r.dist === distFilter)
+            );
+
+            // 5. Build Summary Tabel di Bawah Forecast
+            const fSum = {
+                'APL': { stockVal: 0, reqVal: 0, eoyVal: 0 },
+                'KFT & OTHERS': { stockVal: 0, reqVal: 0, eoyVal: 0 },
+                'TOTAL': { stockVal: 0, reqVal: 0, eoyVal: 0 }
+            };
+            
+            // Kalkulasi dari keseluruhan data (Tanpa filter status) agar merefleksikan seluruh gudang
+            tableData.forEach(d => {
+                let dGroup = d.dist;
+                if(fSum[dGroup]) {
+                    fSum[dGroup].stockVal += (d.stockValue || 0);
+                    fSum[dGroup].reqVal += (d.requiredStockValue || 0);
+                    fSum[dGroup].eoyVal += (d.estEOYValue || 0);
+                }
+                fSum['TOTAL'].stockVal += (d.stockValue || 0);
+                fSum['TOTAL'].reqVal += (d.requiredStockValue || 0);
+                fSum['TOTAL'].eoyVal += (d.estEOYValue || 0);
+            });
+
+            return (
+                <div className="space-y-6 animate-fade-in pb-12">
+                    <div className="bg-white p-6 border shadow animate-fade-in">
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-4 border-b pb-2 gap-4">
+                            <h2 className="text-xl font-black text-blue-900 mb-2 md:mb-0">Analisa Stock Forecast & Kebutuhan Akhir Tahun</h2>
+                            <div className="flex gap-4">
+                                <div className="flex items-center">
+                                    <span className="text-[10px] font-bold text-gray-600 mr-2 uppercase">Distributor:</span>
+                                    <select value={distFilter} onChange={(e) => setDistFilter(e.target.value)} className="border-2 border-blue-400 rounded p-1 text-xs font-bold text-gray-700 bg-blue-50">
+                                        <option value="ALL">SEMUA DISTRIBUTOR</option>
+                                        <option value="APL">APL</option>
+                                        <option value="KFT & OTHERS">KFT / OTHERS</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-center">
+                                    <span className="text-[10px] font-bold text-gray-600 mr-2 uppercase">Status:</span>
+                                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border-2 border-orange-400 rounded p-1 text-xs font-bold text-gray-700 bg-orange-50">
+                                        <option value="ALL">SEMUA STATUS</option>
+                                        <option value="OVERSTOCK">OVERSTOCK (&gt; 90 Hari)</option>
+                                        <option value="HEALTHY">HEALTHY (30 - 90 Hari)</option>
+                                        <option value="UNDERSTOCK">UNDERSTOCK (&lt; 30 Hari)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="overflow-y-auto max-h-[500px] mb-8">
+                            <table className="excel-table w-full text-left">
+                                <thead className="sticky top-0 shadow">
+                                    <tr>
+                                        <th>Dist</th>
+                                        <th>Nama Produk</th>
+                                        <th className="text-right">Target FY (Rp)</th>
+                                        <th className="text-right">Avg Sales /Bln (Unit)</th>
+                                        <th className="text-right bg-blue-50">Stok Saat Ini (Unit)</th>
+                                        <th className="text-right bg-blue-50">Value Stok (Rp)</th>
+                                        <th className="text-center">SCD</th>
+                                        <th className="text-center">Status</th>
+                                        <th className="text-right bg-orange-50 text-red-700">Stok Kurang 60 Hr (Unit)</th>
+                                        <th className="text-right bg-orange-50 text-red-700">Value Kurang (Rp)</th>
+                                        <th className="text-right bg-green-50 text-green-800">Est Beli s/d Akhir Thn (Unit)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredData.length === 0 ? <tr><td colSpan="11" className="text-center py-4 text-gray-400">Tidak ada data untuk filter ini.</td></tr> : null}
+                                    {filteredData.map((r, i) => (
+                                        <tr key={i} className="hover:bg-gray-50">
+                                            <td className="text-center font-bold text-blue-900">{r.dist}</td>
+                                            <td className="font-semibold">{r.name}</td>
+                                            <td className="text-right text-gray-600">{formatCurr(r.targetRp)}</td>
+                                            <td className="text-right font-semibold">{formatCurr(r.avgMonthlySalesUnit)}</td>
+                                            <td className="text-right font-black bg-blue-50">{formatCurr(r.stockUnit)}</td>
+                                            <td className="text-right font-black bg-blue-50 text-blue-700">{formatCurr(r.stockValue)}</td>
+                                            <td className={`text-center font-bold ${r.color}`}>{r.scd >= 999 ? '>999' : r.scd} Hari</td>
+                                            <td className={`text-center font-bold ${r.color}`}>{r.status}</td>
+                                            <td className="text-right font-black bg-orange-50 text-red-700">{formatCurr(r.requiredStockUnit)}</td>
+                                            <td className="text-right font-black bg-orange-50 text-red-700">{formatCurr(r.requiredStockValue)}</td>
+                                            <td className="text-right font-black bg-green-50 text-green-700">{formatCurr(r.orderForEOY)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* TABEL SUMMARY FORECAST */}
+                        <div className="bg-slate-50 border border-gray-300 p-4 rounded-lg shadow-sm">
+                            <h3 className="font-black text-lg mb-3 text-center uppercase tracking-widest text-slate-800 border-b border-gray-300 pb-2">📊 SUMMARY KEBUTUHAN STOCK & VALUE</h3>
+                            <table className="excel-table w-full text-lg">
+                                <thead>
+                                    <tr>
+                                        <th className="bg-slate-200 text-left">Distributor</th>
+                                        <th className="bg-blue-100 text-right text-blue-900">Total Value Stok Saat Ini (Rp)</th>
+                                        <th className="bg-orange-100 text-right text-red-800">Value Kurang utk 60 Hr (Rp)</th>
+                                        <th className="bg-green-100 text-right text-green-900">Value Est Beli s/d Akhir Thn (Rp)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="hover:bg-white">
+                                        <td className="font-bold">APL</td>
+                                        <td className="text-right font-black text-blue-700">{formatCurr(fSum['APL'].stockVal)}</td>
+                                        <td className="text-right font-black text-red-600">{formatCurr(fSum['APL'].reqVal)}</td>
+                                        <td className="text-right font-black text-green-700">{formatCurr(fSum['APL'].eoyVal)}</td>
+                                    </tr>
+                                    <tr className="hover:bg-white">
+                                        <td className="font-bold">KFT & OTHERS</td>
+                                        <td className="text-right font-black text-blue-700">{formatCurr(fSum['KFT & OTHERS'].stockVal)}</td>
+                                        <td className="text-right font-black text-red-600">{formatCurr(fSum['KFT & OTHERS'].reqVal)}</td>
+                                        <td className="text-right font-black text-green-700">{formatCurr(fSum['KFT & OTHERS'].eoyVal)}</td>
+                                    </tr>
+                                    <tr className="total-row !bg-yellow-300">
+                                        <td className="font-black text-lg">GRAND TOTAL</td>
+                                        <td className="text-right font-black text-lg text-blue-900">{formatCurr(fSum['TOTAL'].stockVal)}</td>
+                                        <td className="text-right font-black text-lg text-red-700">{formatCurr(fSum['TOTAL'].reqVal)}</td>
+                                        <td className="text-right font-black text-lg text-green-800">{formatCurr(fSum['TOTAL'].eoyVal)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p className="text-[10px] text-gray-500 mt-2 font-bold italic">*Summary dihitung dari keseluruhan produk tanpa terpengaruh filter Status atas.</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // MENU 7: SUMMARY & PROJECTION 
+        // ==========================================
+        const SummaryView = ({ apiData, month }) => {
+            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            const target2026 = apiData.target2026 || [];
+            const sales2026 = apiData.sales2026 || [];
+            const sales2025 = apiData.sales2025 || [];
+
+            const m = parseInt(month) || 1;
+            const projM = m < 12 ? m + 1 : 12; 
+            
+            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const mName = mNames[m-1];
+            const projMName = mNames[projM-1];
+
+            const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total'];
+            const kBulan = ['bulan', 'month', 'bln'];
+            const kDiv = ['division', 'divisi', 'div', 'departemen'];
+            const kBrand = ['brand', 'sub_brand', 'sub brand']; 
+            const kChan = ['cluster', 'channel', 'grup', 'tipe outlet'];
+            const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust', 'outlet'];
+            
+            let dMap = { 
+                biz: { 
+                    PHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 }, 
+                    CHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 } 
+                }, 
+                cluster: {}, 
+                brand: {}, 
+                outlet: {}
+            };
+
+            target2026.forEach(r => {
+                let biz = detectBizType(r); if(biz==='UNKNOWN') return;
+                let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                let bln = parseInt(getVal(r, kBulan));
+                
+                if (bln > 0) {
+                    if(bln === projM) dMap.biz[biz].q_projM += val;
+                    dMap.biz[biz].q_fy += val;
+                } else {
+                    dMap.biz[biz].q_projM += parseNum(getVal(r, [`quota ${projMName.toLowerCase()}`]));
+                    for(let i=0; i<12; i++) dMap.biz[biz].q_fy += parseNum(getVal(r, [`quota ${mNames[i].toLowerCase()}`]));
+                }
+            });
+
+            sales2026.forEach(r => {
+                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                let biz = detectBizType(r);
+                let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase();
+                let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase();
+                let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase();
+                let sales = parseNum(getVal(r, kSales));
+
+                if(dMap.biz[biz]) {
+                    if(bln === m) dMap.biz[biz].a_mtd += sales;
+                    if(bln <= m) dMap.biz[biz].ytd26_m += sales;
+                }
+
+                if(bln <= m) {
+                    if(brand && brand !== 'UNASSIGNED' && brand !== '') {
+                        if(!dMap.brand[brand]) dMap.brand[brand] = { y26: 0, y25_m: 0 };
+                        dMap.brand[brand].y26 += sales;
+                    }
+                    if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED' && chan !== '') {
+                        if(!dMap.cluster[chan]) dMap.cluster[chan] = { y26: 0, y25_m: 0 };
+                        dMap.cluster[chan].y26 += sales;
+                    }
+                    if(outlet && outlet !== 'UNASSIGNED' && outlet !== 'UNDEFINED' && outlet !== '') {
+                        if(!dMap.outlet[outlet]) dMap.outlet[outlet] = { y26: 0, y25_m: 0 };
+                        dMap.outlet[outlet].y26 += sales;
+                    }
+                }
+            });
+
+            sales2025.forEach(r => {
+                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                let biz = detectBizType(r);
+                let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase();
+                let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase();
+                let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase();
+                let sales = parseNum(getVal(r, kSales));
+
+                if(dMap.biz[biz]) {
+                    dMap.biz[biz].a25_fy += sales;
+                    if(bln <= m) dMap.biz[biz].ytd25_m += sales;
+                }
+
+                if(brand && brand !== 'UNASSIGNED' && brand !== '') {
+                    if(!dMap.brand[brand]) dMap.brand[brand] = { y26: 0, y25_m: 0 };
+                    if(bln <= m) dMap.brand[brand].y25_m += sales;
+                }
+                if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED' && chan !== '') {
+                    if(!dMap.cluster[chan]) dMap.cluster[chan] = { y26: 0, y25_m: 0 };
+                    if(bln <= m) dMap.cluster[chan].y25_m += sales;
+                }
+                if(outlet && outlet !== 'UNASSIGNED' && outlet !== 'UNDEFINED' && outlet !== '') {
+                    if(!dMap.outlet[outlet]) dMap.outlet[outlet] = { y26: 0, y25_m: 0 };
+                    if(bln <= m) dMap.outlet[outlet].y25_m += sales;
+                }
+            });
+
+            // PROJECTION FORMULA
+            const calcProjection = (bz) => {
+                const data = dMap.biz[bz];
+                
+                // EST murni dari Run Rate YTD
+                const est = data.ytd26_m > 0 ? (data.ytd26_m / m) : 0; 
+                const achEst = getP(est, data.q_projM);
+                
+                // Growth Avg (Avg YTD+Est vs Avg FY25)
+                const avgYtdEst26 = (data.ytd26_m + est) / projM;
+                const avg25 = data.a25_fy / 12;
+                const grwtAvg = calcGrowth(avgYtdEst26, avg25);
+
+                // Growth YTD (YTD 26 vs YTD 25)
+                const grwtYtd = calcGrowth(data.ytd26_m, data.ytd25_m);
+
+                return { bz, q_projM: data.q_projM, est, achEst, grwtAvg, grwtYtd };
+            };
+
+            const chgProj = calcProjection('CHG');
+            const phgProj = calcProjection('PHG');
+
+            const totalQProj = chgProj.q_projM + phgProj.q_projM;
+            const totalEst = chgProj.est + phgProj.est;
+            const totalAchEst = getP(totalEst, totalQProj);
+
+            const totalCurrComb = (dMap.biz.CHG.ytd26_m + chgProj.est) + (dMap.biz.PHG.ytd26_m + phgProj.est);
+            const totalPrevComb = (dMap.biz.CHG.a25_fy + dMap.biz.PHG.a25_fy) / 12;
+            const totalGrwtAvg = calcGrowth(totalCurrComb / projM, totalPrevComb);
+
+            const totalYtd26_m = dMap.biz.CHG.ytd26_m + dMap.biz.PHG.ytd26_m;
+            const totalYtd25_m = dMap.biz.CHG.ytd25_m + dMap.biz.PHG.ytd25_m;
+            const totalGrwtYtd = calcGrowth(totalYtd26_m, totalYtd25_m);
+
+            const bizEval = [chgProj, phgProj].filter(b => b.grwtAvg < 0 || b.grwtYtd < 0);
+
+            const clusterEval = Object.keys(dMap.cluster).map(k => {
+                let d = dMap.cluster[k];
+                let grwt = calcGrowth(d.y26, d.y25_m);
+                return { name: k, grwt };
+            }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
+
+            const brandEval = Object.keys(dMap.brand).map(k => {
+                let d = dMap.brand[k];
+                let grwt = calcGrowth(d.y26, d.y25_m);
+                return { name: k, grwt };
+            }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
+
+            const outletEval = Object.keys(dMap.outlet).map(k => {
+                let d = dMap.outlet[k];
+                let grwt = calcGrowth(d.y26, d.y25_m);
+                return { name: k, grwt, y25_m: d.y25_m };
+            }).filter(d => d.grwt < 0 && d.y25_m > 0).sort((a,b) => a.grwt - b.grwt);
+
+            return (
+                <div className="space-y-6 animate-fade-in pb-12">
+                    <div className="bg-white p-6 border shadow-md">
+                        <div className="text-center mb-6">
+                            <h2 className="header-title !text-xl !px-12">PROJECTION & ESTIMATION FOR {projMName.toUpperCase()} 2026</h2>
+                            <p className="text-xs text-gray-500 font-semibold italic">
+                                Based on Selected Month: <b>{mName} 2026</b> | Projection Month: <b>{projMName} 2026</b>
+                            </p>
+                        </div>
+
+                        <table className="excel-table w-full max-w-5xl mx-auto mb-8">
+                            <thead>
+                                <tr>
+                                    <th className="text-left text-sm py-2">Business Type</th>
+                                    <th className="text-right text-sm py-2">Sum of Quota {projMName}</th>
+                                    <th className="text-right text-sm py-2">EST {projMName}</th>
+                                    <th className="text-center text-sm py-2">% Ach Est</th>
+                                    <th className="text-center text-sm py-2">Growth Avg ({mName}+{projMName})</th>
+                                    <th className="text-center text-sm py-2">Growth YTD ({mName})</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="text-left font-bold text-sm py-2">CHG</td>
+                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(chgProj.q_projM)}</td>
+                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(chgProj.est)}</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cAch(chgProj.achEst)}`}>{chgProj.achEst}%</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(chgProj.grwtAvg)}`}>{fGrw(chgProj.grwtAvg)}</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(chgProj.grwtYtd)}`}>{fGrw(chgProj.grwtYtd)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="text-left font-bold text-sm py-2">PHG</td>
+                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(phgProj.q_projM)}</td>
+                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(phgProj.est)}</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cAch(phgProj.achEst)}`}>{phgProj.achEst}%</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(phgProj.grwtAvg)}`}>{fGrw(phgProj.grwtAvg)}</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(phgProj.grwtYtd)}`}>{fGrw(phgProj.grwtYtd)}</td>
+                                </tr>
+                                <tr className="total-row">
+                                    <td className="text-left font-black text-sm py-2">Total</td>
+                                    <td className="text-right font-black text-sm py-2">{formatCurr(totalQProj)}</td>
+                                    <td className="text-right font-black text-sm py-2">{formatCurr(totalEst)}</td>
+                                    <td className={`text-center font-black text-sm py-2 ${cAch(totalAchEst)}`}>{totalAchEst}%</td>
+                                    <td className={`text-center font-black text-sm py-2 ${cGrw(totalGrwtAvg)}`}>{fGrw(totalGrwtAvg)}</td>
+                                    <td className={`text-center font-black text-sm py-2 ${cGrw(totalGrwtYtd)}`}>{fGrw(totalGrwtYtd)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div className="bg-red-50 border-2 border-red-300 p-6 rounded-lg max-w-5xl mx-auto shadow-sm">
+                            <h3 className="text-red-800 font-black text-lg mb-3 border-b border-red-200 pb-2 flex items-center gap-2">
+                                <span>🚨</span> EXECUTIVE EVALUATION (SUMMARY NEGATIVE PERFORMANCE DECLINE)
+                            </h3>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4">
+                                <div className="bg-white p-3 border border-red-200 rounded">
+                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Business Type Minus:</h4>
+                                    {bizEval.length === 0 ? (
+                                        <p className="text-xs text-green-600 font-semibold">Semua Business Type Positif.</p>
+                                    ) : (
+                                        <ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">
+                                            {bizEval.map((b, i) => (
+                                                <li key={i}>{b.bz}: Avg <span className="text-red-600">{b.grwtAvg}%</span> | YTD <span className="text-red-600">{b.grwtYtd}%</span></li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+
+                                <div className="bg-white p-3 border border-red-200 rounded">
+                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Cluster / Channel Minus:</h4>
+                                    {clusterEval.length === 0 ? (
+                                        <p className="text-xs text-green-600 font-semibold">Semua Cluster/Channel Positif.</p>
+                                    ) : (
+                                        <div className="max-h-36 overflow-y-auto pr-1">
+                                            <ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">
+                                                {clusterEval.map((c, i) => (
+                                                    <li key={i}>{c.name}: <span className="float-right text-red-600">{c.grwt}%</span></li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-white p-3 border border-red-200 rounded">
+                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Sub Brand / Brand Minus:</h4>
+                                    {brandEval.length === 0 ? (
+                                        <p className="text-xs text-green-600 font-semibold">Semua Sub Brand Positif.</p>
+                                    ) : (
+                                        <div className="max-h-36 overflow-y-auto pr-1">
+                                            <ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">
+                                                {brandEval.map((b, i) => (
+                                                    <li key={i}>{b.name}: <span className="float-right text-red-600">{b.grwt}%</span></li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-white p-3 border border-red-200 rounded">
+                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Outlet Minus:</h4>
+                                    {outletEval.length === 0 ? (
+                                        <p className="text-xs text-green-600 font-semibold">Semua Outlet Positif.</p>
+                                    ) : (
+                                        <div className="max-h-36 overflow-y-auto pr-1">
+                                            <ul className="list-disc pl-4 text-[10px] text-red-700 font-bold space-y-1">
+                                                {outletEval.map((o, i) => (
+                                                    <li key={i} className="border-b border-red-50 pb-1 mb-1">{o.name}: <span className="float-right text-red-600">{o.grwt}%</span></li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-4 pt-3 border-t border-red-200 bg-red-100/50 p-3 rounded text-xs text-red-900 leading-relaxed font-semibold">
+                                <b>GARIS BESAR EVALUASI:</b><br/>
+                                Ditinjau dari data hingga bulan {mName} 2026, terdapat <b>{bizEval.length} Business Type</b>, <b>{clusterEval.length} Cluster</b>, <b>{brandEval.length} Sub Brand</b>, dan <b>{outletEval.length} Outlet</b> yang mengalami pertumbuhan minus (decline). Prioritas aksi mendesak difokuskan pada pemulihan sales di segmen minus tersebut guna memastikan pencapaian target estimasi bulan {projMName} 2026 sebesar <b>Rp {formatCurr(totalEst)}</b> tercapai secara optimal.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // MENU 8: UPLOAD DATA
+        // ==========================================
+        const UploadView = () => {
+            const [file, setFile] = useState(null);
+            const [isUploading, setIsUploading] = useState(false);
+            const [msg, setMsg] = useState("");
+
+            const handleFile = (e) => setFile(e.target.files[0]);
+
+            const handleUpload = () => {
+                if(!file) { setMsg("❌ Pilih file Excel terlebih dahulu!"); return; }
+                setIsUploading(true); setMsg("⏳ Membaca file Excel...");
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                        
+                        if(json.length === 0) throw new Error("File Excel Kosong!");
+                        setMsg(`⏳ Mengirim ${json.length} baris data ke Server Apps Script...`);
+
+                        fetch(API_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({ type: 'sales2026', data: json })
+                        }).then(res => res.json()).then(res => {
+                            if(res.status === 'success') {
+                                setMsg("✅ Berhasil. Halaman akan direfresh...");
+                                setTimeout(() => window.location.reload(), 3000);
+                            } else {
+                                setMsg("❌ Error Server: " + res.message); setIsUploading(false);
+                            }
+                        }).catch(err => {
+                            setMsg("❌ Error Network: " + err.message); setIsUploading(false);
+                        });
+                    } catch(err) {
+                        setMsg("❌ Gagal membaca Excel: " + err.message); setIsUploading(false);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            return (
+                <div className="bg-white p-8 border shadow max-w-2xl mx-auto text-center mt-10">
+                    <h2 className="text-2xl font-black mb-2 text-blue-900">Upload Data Sales 2026</h2>
+                    <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFile} disabled={isUploading} className="block w-full text-sm border p-2 mb-6" />
+                    <button onClick={handleUpload} disabled={isUploading || !file} className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-8 rounded shadow">
+                        {isUploading ? 'Memproses Upload...' : 'Upload & Timpa Data'}
+                    </button>
+                    {msg && <div className="mt-6 p-4 border text-sm font-semibold rounded bg-gray-100">{msg}</div>}
+                </div>
+            );
+        };
+
+        // ==========================================
+        // APP UTAMA
+        // ==========================================
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('summary'); 
+            const [filters, setFilters] = useState({ month: '5' }); 
+            const [apiData, setApiData] = useState(null);
+            const [isLoading, setIsLoading] = useState(true);
+            const [errorMsg, setErrorMsg] = useState(null);
+            
+            const [searchOutlet, setSearchOutlet] = useState('');
+            const [filterDivisi, setFilterDivisi] = useState('ALL');
+            const [filterDistributor, setFilterDistributor] = useState('ALL');
+
+            useEffect(() => { 
+                setIsLoading(true);
+                setErrorMsg(null);
+                fetch(API_URL)
+                    .then(res => {
+                        if (!res.ok) throw new Error("HTTP Status " + res.status);
+                        return res.json();
+                    })
+                    .then(res => { 
+                        if(res && res.status === 'success' && res.data) {
+                            setApiData(res.data);
+                        } else {
+                            setErrorMsg(res?.message || "Format respons server tidak sesuai.");
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Gagal memuat API:", err);
+                        setErrorMsg("Gagal terhubung ke Google Apps Script: " + err.message);
+                    })
+                    .finally(() => setIsLoading(false));
+            }, []);
+            
+            const outletSuggestions = useMemo(() => {
+                if(!apiData) return [];
+                let set = new Set();
+                const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust'];
+                if(apiData.sales2025) apiData.sales2025.forEach(r => { let n = getVal(r, kCustName); if(n) set.add(String(n).trim()); });
+                if(apiData.sales2026) apiData.sales2026.forEach(r => { let n = getVal(r, kCustName); if(n) set.add(String(n).trim()); });
+                return Array.from(set).sort();
+            }, [apiData]);
+
+            return (
+                <div className="min-h-screen">
+                    <div className="bg-white border-b shadow-sm sticky top-0 z-50">
+                        <div className="max-w-[1400px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+                            <h1 className="text-xl font-black italic text-blue-900 tracking-tighter w-full md:w-auto">Push Limits Dashboard</h1>
+                            
+                            <div className="flex flex-wrap space-x-1 w-full xl:w-auto justify-center">
+                                <button onClick={()=>setActiveTab('summary')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='summary'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Summary</button>
+                                <button onClick={()=>setActiveTab('dashboard')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='dashboard'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Report Sales</button>
+                                <button onClick={()=>setActiveTab('pareto')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='pareto'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Pareto Brand</button>
+                                <button onClick={()=>setActiveTab('city')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='city'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Big City Papua</button>
+                                <button onClick={()=>setActiveTab('outlets')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='outlets'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Buying Outlets</button>
+                                <button onClick={()=>setActiveTab('npd')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='npd'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>NPD Monitor</button>
+                                <button onClick={()=>setActiveTab('forecast')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='forecast'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Forecast</button>
+                                <button onClick={()=>setActiveTab('upload')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='upload'?'border-blue-500 text-blue-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Upload</button>
+                            </div>
+                            
+                            <div className="flex items-center gap-4 text-sm font-bold w-full md:w-auto mt-2 md:mt-0 justify-end">
+                                {isLoading ? <span className="text-orange-500">Memuat Server...</span> : errorMsg ? <span className="text-red-500">⚠️ Error Server</span> : <span className="text-green-600 hidden md:inline">✅ Terhubung</span>}
+                                {activeTab !== 'upload' && (
+                                    <div className="flex items-center bg-gray-100 p-1 rounded border">
+                                        <span className="mr-2 text-xs text-gray-500 uppercase">Set Bulan:</span>
+                                        <select value={filters.month} onChange={(e) => setFilters({month: e.target.value})} className="bg-white border p-1 font-black text-orange-600">
+                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Bln {m}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {activeTab === 'dashboard' && (
+                            <div className="bg-gray-50 border-t py-2 px-4 flex flex-wrap gap-4 max-w-[1400px] mx-auto justify-end items-center">
+                                <div className="text-xs font-bold text-gray-500 uppercase mr-auto w-full md:w-auto">Global Filters:</div>
+                                
+                                <input list="outletList" placeholder="Cari Nama Outlet..." value={searchOutlet} onChange={(e) => setSearchOutlet(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-48" />
+                                <datalist id="outletList">
+                                    <option value="">-- Semua Outlet --</option>
+                                    {outletSuggestions.map((n, i) => <option key={i} value={n} />)}
+                                </datalist>
+                                
+                                <select value={filterDistributor} onChange={(e) => setFilterDistributor(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-40">
+                                    <option value="ALL">Semua Distributor</option>
+                                    <option value="APL">Distributor: APL</option>
+                                    <option value="KFT">Distributor: KFT & Others</option>
+                                </select>
+                                
+                                <select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-40">
+                                    <option value="ALL">Semua Divisi</option>
+                                    <option value="COMMON CURE">COMMON CURE (CHG)</option>
+                                    <option value="HEALTH SUPPLEMENT">HEALTH SUPPLEMENT (CHG)</option>
+                                    <option value="PERSONAL CARE">PERSONAL CARE (CHG)</option>
+                                    <option value="NATURALS">NATURALS (CHG)</option>
+                                    <option value="CARDIO METABOLIC">CARDIO METABOLIC (PHG)</option>
+                                    <option value="CHILD CARE">CHILD CARE (PHG)</option>
+                                    <option value="CRITICAL CARE">CRITICAL CARE (PHG)</option>
+                                    <option value="GENERAL MEDICINE">GENERAL MEDICINE (PHG)</option>
+                                    <option value="WOMEN HEALTH">WOMEN HEALTH (PHG)</option>
+                                    <option value="WOUND CARE">WOUND CARE (PHG)</option>
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <main className="max-w-[1400px] mx-auto px-4 mt-6">
+                        {isLoading ? (
+                            <div className="text-center p-12 mt-10 text-gray-600 font-semibold border bg-white shadow-sm rounded">
+                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-orange-500 border-t-transparent mb-4"></div>
+                                <p>Sistem sedang menarik & memproses data dari Google Sheets. Harap tunggu...</p>
+                            </div>
+                        ) : errorMsg && !apiData ? (
+                            <div className="p-8 m-4 bg-amber-50 border border-amber-300 rounded text-amber-900 text-center shadow">
+                                <h3 className="text-lg font-bold mb-2">⚠️ Peringatan Server / Koneksi</h3>
+                                <p className="text-sm mb-4">{errorMsg}</p>
+                                <p className="text-xs text-gray-600 mb-4">Aplikasi tetap dapat digunakan untuk mengunggah file data baru via menu <b>Upload</b>.</p>
+                                <button onClick={() => window.location.reload()} className="px-4 py-2 bg-amber-600 text-white font-bold rounded">
+                                    Coba Muat Ulang
+                                </button>
+                            </div>
+                        ) : activeTab === 'summary' ? <SummaryView apiData={apiData} month={filters.month} /> :
+                            activeTab === 'dashboard' ? <ReportSalesView apiData={apiData} month={filters.month} searchOutlet={searchOutlet} filterDivisi={filterDivisi} filterDistributor={filterDistributor} /> :
+                            activeTab === 'pareto' ? <ParetoBrandView apiData={apiData} month={filters.month} /> :
+                            activeTab === 'city' ? <CityView apiData={apiData} month={filters.month} /> :
+                            activeTab === 'npd' ? <NPDView apiData={apiData} /> :
+                            activeTab === 'outlets' ? <OutletAnalysisView apiData={apiData} month={filters.month} /> :
+                            activeTab === 'forecast' ? <ForecastView apiData={apiData} month={filters.month} /> :
+                            <UploadView />
+                        }
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <ErrorBoundary>
+                <App />
+            </ErrorBoundary>
+        );
+    </script>
+</body>
+</html>
+```eof
