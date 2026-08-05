@@ -119,6 +119,9 @@
             }
         }
 
+        // ==========================================
+        // GLOBAL UTILITIES
+        // ==========================================
         const getVal = (row, keywords) => {
             if (!row || typeof row !== 'object') return undefined;
             const keys = Object.keys(row);
@@ -211,96 +214,71 @@
             );
         };
 
-        // KOMPONEN CUSTOM SEARCHABLE DROPDOWN
-        const SearchableSelect = ({ options, value, onChange, placeholder }) => {
-            const [isOpen, setIsOpen] = useState(false);
-            const [search, setSearch] = useState(value || '');
-            const wrapperRef = useRef(null);
-
-            useEffect(() => {
-                setSearch(value === 'ALL' ? '🌟 KESELURUHAN PAPUA (ALL)' : (value || ''));
-            }, [value]);
-
-            useEffect(() => {
-                function handleClickOutside(event) {
-                    if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-                        setIsOpen(false);
-                        setSearch(value === 'ALL' ? '🌟 KESELURUHAN PAPUA (ALL)' : (value || ''));
-                    }
-                }
-                document.addEventListener("mousedown", handleClickOutside);
-                return () => document.removeEventListener("mousedown", handleClickOutside);
-            }, [wrapperRef, value]);
-
-            const filteredOptions = options.filter(opt => 
-                opt.toLowerCase().includes(search.toLowerCase().replace('🌟 keseluruhan papua (all)', 'all'))
-            );
-
-            return (
-                <div ref={wrapperRef} className="relative w-[350px]">
-                    <input
-                        type="text"
-                        className="w-full p-2 rounded text-black font-bold uppercase shadow-inner border-2 border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 cursor-text"
-                        placeholder={placeholder}
-                        value={search}
-                        onClick={() => { setIsOpen(true); setSearch(''); }}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setIsOpen(true);
-                        }}
-                    />
-                    {isOpen && (
-                        <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-xl max-h-60 overflow-y-auto text-left">
-                            {filteredOptions.length === 0 ? (
-                                <li className="p-2 text-gray-500 text-sm italic">Outlet tidak ditemukan</li>
-                            ) : (
-                                filteredOptions.map((opt, i) => (
-                                    <li 
-                                        key={i} 
-                                        className="p-2 hover:bg-yellow-100 cursor-pointer border-b border-gray-100 text-xs font-bold text-gray-800"
-                                        onClick={() => {
-                                            onChange(opt);
-                                            setSearch(opt === 'ALL' ? '🌟 KESELURUHAN PAPUA (ALL)' : opt);
-                                            setIsOpen(false);
-                                        }}
-                                    >
-                                        {opt === 'ALL' ? '🌟 KESELURUHAN PAPUA (ALL)' : opt}
-                                    </li>
-                                ))
-                            )}
-                        </ul>
-                    )}
-                </div>
-            );
-        };
-
+        // ==========================================
+        // MENU 1: OUTLET PRESENTER (BUSINESS REVIEW)
+        // ==========================================
         const OutletPresenterView = ({ apiData, month, selectedOutlet, onSelectOutlet }) => {
             const [selectedMonthBR, setSelectedMonthBR] = useState(month);
+            const [searchTerm, setSearchTerm] = useState(selectedOutlet);
+            const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+            const dropdownRef = useRef(null);
 
             useEffect(() => {
                 setSelectedMonthBR(month);
             }, [month]);
 
+            useEffect(() => {
+                setSearchTerm(selectedOutlet);
+            }, [selectedOutlet]);
+
+            // Menutup dropdown jika klik di luar area
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                        setIsDropdownOpen(false);
+                    }
+                };
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, []);
+
             const allOutlets = useMemo(() => {
                 if (!apiData) return [];
-                let set = new Set();
+                let map = new Map();
                 const kName = ['customer name', 'nama pelanggan', 'nama outlet', 'outlet', 'customer_name'];
-                if(apiData.target2026) apiData.target2026.forEach(r => { let n = getVal(r, kName); if(n) set.add(String(n).trim().toUpperCase()); });
-                if(apiData.sales2026) apiData.sales2026.forEach(r => { let n = getVal(r, kName); if(n) set.add(String(n).trim().toUpperCase()); });
-                if(apiData.sales2025) apiData.sales2025.forEach(r => { let n = getVal(r, kName); if(n) set.add(String(n).trim().toUpperCase()); });
-                let arr = Array.from(set).sort();
-                arr.unshift("ALL"); 
+                const kCode = ['customer code', 'kode pelanggan', 'cust code', 'outlet code'];
+
+                const proc = (arr) => {
+                    if(!arr) return;
+                    arr.forEach(r => {
+                        let n = String(getVal(r, kName) || '').trim().toUpperCase();
+                        let c = String(getVal(r, kCode) || '').trim().toUpperCase();
+                        if (n && n !== 'UNDEFINED' && n !== '') {
+                            let disp = (c && c !== 'UNDEFINED' && c !== '') ? `${c} - ${n}` : n;
+                            map.set(n, disp);
+                        }
+                    });
+                };
+
+                proc(apiData.target2026);
+                proc(apiData.sales2026);
+                proc(apiData.sales2025);
+
+                let arr = Array.from(map.values()).sort();
+                arr.unshift("ALL (KESELURUHAN PAPUA)");
                 return arr;
             }, [apiData]);
 
             const m = parseInt(selectedMonthBR) || 1;
             const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             const mName = mNames[m-1];
-            const isAllMode = selectedOutlet === 'ALL' || selectedOutlet === 'ALL OUTLETS';
 
             const outletData = useMemo(() => {
-                if (!apiData || !selectedOutlet) return null;
-                const outletSearch = selectedOutlet.toUpperCase();
+                if (!selectedOutlet) return null;
+                
+                const isAllMode = selectedOutlet === 'ALL (KESELURUHAN PAPUA)';
+                // Ekstrak nama outlet murni jika formatnya "KODE - NAMA"
+                const searchName = selectedOutlet.includes(' - ') ? selectedOutlet.split(' - ').slice(1).join(' - ') : selectedOutlet;
                 
                 const kProd = ['product name', 'nama produk', 'material'];
                 const kSales = ['sum of sales', 'sales', 'value', 'amount'];
@@ -315,7 +293,7 @@
 
                 apiData.target2026.forEach(r => {
                     let cName = String(getVal(r, kCustName) || '').trim().toUpperCase();
-                    if(isAllMode || cName === outletSearch || cName.includes(outletSearch)) {
+                    if (isAllMode || cName === searchName || cName.includes(searchName)) {
                         let pName = String(getVal(r, kProd) || 'UNKNOWN').trim().toUpperCase();
                         let targetVal = parseNum(getVal(r, kTarget));
                         
@@ -336,19 +314,29 @@
                             });
                             if(!found) {
                                 targetFY += targetVal;
-                                targetMTD += (targetVal / 12); 
+                                targetMTD += (targetVal / 12);
                             }
                         }
 
                         if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0 };
                         skuMap[pName].target += targetVal;
-                        if(blnRaw && parseInt(blnRaw) === m) skuMap[pName].targetMtd += targetVal;
+                        
+                        if (blnRaw && parseInt(blnRaw) === m) {
+                            skuMap[pName].targetMtd += targetVal;
+                        } else if (!blnRaw) {
+                            let vMtd = parseNum(getVal(r, [`quota ${mName.toLowerCase()}`, `target ${mName.toLowerCase()}`, `sum of quota ${mName.toLowerCase()}`]));
+                            if (vMtd > 0) {
+                                skuMap[pName].targetMtd += vMtd;
+                            } else {
+                                skuMap[pName].targetMtd += (targetVal / 12);
+                            }
+                        }
                     }
                 });
 
                 apiData.sales2025.forEach(r => {
                     let cName = String(getVal(r, kCustName) || '').trim().toUpperCase();
-                    if(isAllMode || cName === outletSearch || cName.includes(outletSearch)) {
+                    if (isAllMode || cName === searchName || cName.includes(searchName)) {
                         let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
                         let pName = String(getVal(r, kProd) || 'UNKNOWN').trim().toUpperCase();
                         let salesVal = parseNum(getVal(r, kSales));
@@ -357,13 +345,13 @@
 
                         if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0 };
                         skuMap[pName].sales25 += salesVal; 
-                        if(bln === m) skuMap[pName].mtd25 += salesVal; 
+                        if(bln === m) skuMap[pName].mtd25 += salesVal;
                     }
                 });
 
                 apiData.sales2026.forEach(r => {
                     let cName = String(getVal(r, kCustName) || '').trim().toUpperCase();
-                    if(isAllMode || cName === outletSearch || cName.includes(outletSearch)) {
+                    if (isAllMode || cName === searchName || cName.includes(searchName)) {
                         let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
                         let pName = String(getVal(r, kProd) || 'UNKNOWN').trim().toUpperCase();
                         let salesVal = parseNum(getVal(r, kSales));
@@ -372,7 +360,7 @@
 
                         if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0 };
                         if(bln <= m) skuMap[pName].ytd26 += salesVal; 
-                        if(bln === m) skuMap[pName].mtd26 += salesVal; 
+                        if(bln === m) skuMap[pName].mtd26 += salesVal;
                     }
                 });
 
@@ -384,7 +372,7 @@
                     totMtd25 += d.mtd25;
                     totMtd26 += d.mtd26;
                     return { name: k, ...d };
-                }).sort((a,b) => b.mtd26 - a.mtd26); 
+                }).sort((a,b) => b.mtd26 - a.mtd26);
 
                 skuChart.forEach(d => {
                     d.totalSku26 = d.sku26.size;
@@ -393,31 +381,61 @@
 
                 return { targetFY, targetMTD, tot25, totYtd26, totMtd25, totMtd26, skuArr, skuChart };
 
-            }, [selectedOutlet, apiData, m, isAllMode, mNames]);
-
-            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+            }, [selectedOutlet, apiData, m]);
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full max-w-6xl mx-auto">
-                    <div className="bg-[#0f172a] p-6 rounded-xl shadow-lg border border-blue-900 text-center relative overflow-hidden no-print">
-                        <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px'}}></div>
+                    {/* CONTAINER RELATIVE Z-30 AGAR DROPDOWN TIDAK TERPOTONG */}
+                    <div className="bg-[#0f172a] p-6 rounded-xl shadow-lg border border-blue-900 text-center relative no-print z-30">
+                        {/* Inner Div untuk efek background agar tidak overflow keluar dari lengkungan rounded */}
+                        <div className="absolute inset-0 opacity-20 rounded-xl overflow-hidden" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px'}}></div>
+                        
                         <h2 className="text-2xl font-black text-white mb-4 relative z-10">PRESENTER BUSINESS REVIEW OUTLET</h2>
+                        
                         <div className="relative z-10 flex flex-wrap justify-center items-center gap-4">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2" ref={dropdownRef}>
                                 <span className="text-yellow-400 font-bold text-sm">PILIH OUTLET:</span>
-                                <SearchableSelect 
-                                    options={allOutlets} 
-                                    value={selectedOutlet} 
-                                    onChange={onSelectOutlet} 
-                                    placeholder="Cari Apotek/Grosir (Ketik disini)..." 
-                                />
+                                {/* CUSTOM SEARCHABLE DROPDOWN */}
+                                <div className="relative w-[400px]">
+                                    <input 
+                                        type="text" 
+                                        value={searchTerm} 
+                                        onChange={(e) => {
+                                            setSearchTerm(e.target.value);
+                                            setIsDropdownOpen(true);
+                                        }} 
+                                        onFocus={() => setIsDropdownOpen(true)}
+                                        placeholder="KETIK 'ALL' ATAU NAMA APOTEK/GROSIR..." 
+                                        className="w-full p-2 rounded text-black font-bold uppercase shadow-inner border-2 border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-500/50"
+                                    />
+                                    {isDropdownOpen && (
+                                        <ul className="absolute z-50 w-full mt-1 bg-white border-2 border-yellow-400 rounded-md shadow-2xl max-h-60 overflow-y-auto text-left">
+                                            {allOutlets.filter(o => o.toLowerCase().includes((searchTerm || '').toLowerCase())).map((o, i) => (
+                                                <li 
+                                                    key={i} 
+                                                    onClick={() => {
+                                                        onSelectOutlet(o);
+                                                        setSearchTerm(o);
+                                                        setIsDropdownOpen(false);
+                                                    }}
+                                                    className="px-3 py-2 text-xs font-bold text-gray-800 hover:bg-yellow-100 cursor-pointer border-b border-gray-100 last:border-0"
+                                                >
+                                                    {o}
+                                                </li>
+                                            ))}
+                                            {allOutlets.filter(o => o.toLowerCase().includes((searchTerm || '').toLowerCase())).length === 0 && (
+                                                <li className="px-3 py-2 text-xs font-bold text-gray-500 italic">Tidak ditemukan...</li>
+                                            )}
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-yellow-400 font-bold text-sm">SET BULAN BR:</span>
                                 <select 
                                     value={selectedMonthBR} 
                                     onChange={(e) => setSelectedMonthBR(e.target.value)} 
-                                    className="p-2.5 rounded text-black font-bold shadow-inner border-2 border-yellow-400 focus:outline-none cursor-pointer"
+                                    className="p-2 rounded text-black font-bold shadow-inner border-2 border-yellow-400 focus:outline-none cursor-pointer"
                                 >
                                     {[1,2,3,4,5,6,7,8,9,10,11,12].map(mOpt => <option key={mOpt} value={mOpt}>Bulan {mOpt}</option>)}
                                 </select>
@@ -427,15 +445,15 @@
 
                     {!outletData ? (
                         <div className="p-12 text-center text-gray-400 font-bold bg-white border border-gray-200 rounded shadow-sm border-dashed">
-                            👆 Silakan pilih "KESELURUHAN PAPUA" atau ketik nama outlet spesifik untuk memulai presentasi Business Review.
+                            👆 Silakan ketik "ALL" untuk melihat rekapitulasi keseluruhan, atau ketik nama outlet spesifik beserta set bulan untuk memuat dashboard Business Review.
                         </div>
                     ) : (
                         <div className="space-y-6 w-full">
                             <div className="text-center print:block">
                                 <h1 className="text-3xl font-black text-blue-900 uppercase underline decoration-yellow-400 decoration-4 underline-offset-8">
-                                    {isAllMode ? "REKAPITULASI KESELURUHAN (PAPUA)" : selectedOutlet}
+                                    {selectedOutlet === 'ALL (KESELURUHAN PAPUA)' ? 'KESELURUHAN PAPUA (ALL OUTLETS)' : selectedOutlet}
                                 </h1>
-                                <p className="text-gray-500 font-semibold mt-3">Business Review Report - MTD & YTD {mName} 2026</p>
+                                <p className="text-gray-500 font-semibold mt-3">Business Review Report - MTD/YTD {mName} 2026</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 w-full">
@@ -443,41 +461,30 @@
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Target Total FY 2026</p>
                                     <h3 className="text-xl font-black text-blue-900">Rp {formatCurr(outletData.targetFY)}</h3>
                                     <div className="mt-2 pt-2 border-t border-gray-100">
-                                        <p className="text-[9px] text-gray-400 font-bold">Target MTD {mName}: Rp {formatCurr(outletData.targetMTD)}</p>
+                                        <p className="text-[9px] text-gray-400">Target MTD {mName}: Rp {formatCurr(outletData.targetMTD)}</p>
                                     </div>
                                 </div>
-                                
                                 <div className="bg-white border-t-4 border-gray-400 p-3 rounded shadow-sm text-center">
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Transaksi 2025 (FY)</p>
                                     <h3 className="text-xl font-black text-gray-700">Rp {formatCurr(outletData.tot25)}</h3>
                                     <div className="mt-2 pt-2 border-t border-gray-100">
-                                        <p className="text-[9px] text-gray-400 font-bold">MTD {mName} 2025: Rp {formatCurr(outletData.totMtd25)}</p>
+                                        <p className="text-[9px] text-gray-400">MTD {mName} 2025: Rp {formatCurr(outletData.totMtd25)}</p>
                                     </div>
                                 </div>
-
-                                <div className="bg-white border-t-4 border-orange-500 p-3 rounded shadow-sm text-center flex flex-col justify-center relative">
+                                <div className="bg-white border-t-4 border-orange-500 p-3 rounded shadow-sm text-center">
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">MTD Transaksi 2026 ({mName})</p>
                                     <h3 className="text-2xl font-black text-orange-600">Rp {formatCurr(outletData.totMtd26)}</h3>
-                                    
-                                    <div className="absolute top-2 right-2 text-[9px] px-1 py-0.5 rounded font-bold bg-gray-100 text-gray-700 border">
-                                        Growth: {fGrw(calcGrowth(outletData.totMtd26, outletData.totMtd25))}
-                                    </div>
-                                    
-                                    <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center">
-                                        <p className="text-[9px] text-gray-400 font-bold">% Ach MTD: <span className={cAch(getP(outletData.totMtd26, outletData.targetMTD))}>{getP(outletData.totMtd26, outletData.targetMTD)}%</span></p>
+                                    <div className="mt-2 pt-2 border-t border-gray-100">
+                                        <p className="text-[9px] text-gray-400 font-bold">Total YTD: Rp {formatCurr(outletData.totYtd26)}</p>
                                     </div>
                                 </div>
-
                                 <div className="bg-white border-t-4 border-green-500 p-3 rounded shadow-sm text-center flex flex-col justify-center relative">
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">YTD Transaksi 2026 (Jan-{mName})</p>
-                                    <h3 className="text-2xl font-black text-green-600">Rp {formatCurr(outletData.totYtd26)}</h3>
-                                    
-                                    <div className="absolute top-2 right-2 text-[9px] px-1 py-0.5 rounded font-bold bg-gray-100 text-gray-700 border">
-                                        Growth: {fGrw(calcGrowth(outletData.totYtd26, (outletData.tot25/12)*m))}
-                                    </div>
-                                    
-                                    <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center">
-                                         <p className="text-[9px] text-gray-400 font-bold">% Ach FY: <span className={cAch(getP(outletData.totYtd26, outletData.targetFY))}>{getP(outletData.totYtd26, outletData.targetFY)}%</span></p>
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">% Ach Target MTD</p>
+                                    <h3 className={`text-4xl font-black ${cAch(getP(outletData.totMtd26, outletData.targetMTD))}`}>
+                                        {getP(outletData.totMtd26, outletData.targetMTD)}%
+                                    </h3>
+                                    <div className="absolute top-2 right-2 bg-green-100 text-green-800 text-[9px] px-2 py-0.5 rounded font-bold">
+                                        YTD Ach: {getP(outletData.totYtd26, outletData.targetFY)}%
                                     </div>
                                 </div>
                             </div>
@@ -505,20 +512,20 @@
 
                                 <div className="bg-red-50 p-4 border border-red-200 shadow-sm rounded h-full flex flex-col w-full">
                                     <div className="text-center mb-3 border-b border-red-200 pb-2">
-                                        <h3 className="font-black text-sm text-red-800 uppercase tracking-wider">🛒 Saran Prioritas Order (Fokus MTD {mName})</h3>
-                                        <p className="text-[10px] text-red-600">Produk yang dibeli bulan {mName} tahun lalu (LY MTD), tapi bulan ini belum diorder sama sekali.</p>
+                                        <h3 className="font-black text-sm text-red-800 uppercase tracking-wider">🛒 Saran Prioritas Order (Bulan {mName})</h3>
+                                        <p className="text-[10px] text-red-600">Produk yang tahun lalu dibeli (LY MTD), tapi bulan ini belum diorder sama sekali.</p>
                                     </div>
                                     <div className="flex-1 overflow-y-auto max-h-[220px]">
                                         <table className="w-full text-xs text-left border-collapse">
                                             <thead className="bg-red-100 text-red-900 sticky top-0">
                                                 <tr>
                                                     <th className="p-2 border border-red-200">Nama Produk (SKU)</th>
-                                                    <th className="p-2 border border-red-200 text-right">Potensi Nilai MTD (Rp)</th>
+                                                    <th className="p-2 border border-red-200 text-right">Nilai Hilang Bulan Ini (Rp)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {outletData.skuArr.filter(r => r.mtd25 > 0 && r.mtd26 === 0).length === 0 ? (
-                                                    <tr><td colSpan="2" className="p-4 text-center text-green-600 font-bold bg-white">Hebat! Tidak ada potensi MTD yang hilang.</td></tr>
+                                                    <tr><td colSpan="2" className="p-4 text-center text-green-600 font-bold bg-white">Hebat! Tidak ada potensi produk yang hilang bulan ini.</td></tr>
                                                 ) : (
                                                     outletData.skuArr.filter(r => r.mtd25 > 0 && r.mtd26 === 0)
                                                     .sort((a,b) => b.mtd25 - a.mtd25) 
@@ -541,7 +548,7 @@
                                 <table className="excel-table w-full">
                                     <thead className="sticky top-0 shadow-sm">
                                         <tr>
-                                            <th rowSpan="2" className="text-left bg-gray-100 border-b border-gray-300">Nama Produk</th>
+                                            <th rowSpan="2" className="text-left bg-gray-100">Nama Produk</th>
                                             <th colSpan="4" className="bg-blue-50 text-blue-900 border-b border-blue-200">Performa MTD ({mName})</th>
                                             <th colSpan="4" className="bg-orange-50 text-orange-900 border-b border-orange-200">Performa YTD</th>
                                         </tr>
@@ -549,19 +556,18 @@
                                             <th className="text-right bg-blue-50 text-[10px]">Target MTD</th>
                                             <th className="text-right bg-blue-50 text-[10px]">Sales MTD '25</th>
                                             <th className="text-right bg-blue-100 text-blue-900 text-[10px]">Sales MTD '26</th>
-                                            <th className="text-center bg-blue-50 text-[10px]">Grwt MTD</th>
+                                            <th className="text-center bg-green-50 text-green-900 text-[10px]">Grwt MTD</th>
                                             
                                             <th className="text-right bg-orange-50 text-[10px]">Target FY 26</th>
                                             <th className="text-right bg-orange-50 text-[10px]">Sales YTD '25</th>
                                             <th className="text-right bg-orange-100 text-orange-900 text-[10px]">Sales YTD '26</th>
-                                            <th className="text-center bg-orange-50 text-[10px]">Grwt YTD</th>
+                                            <th className="text-center bg-green-50 text-green-900 text-[10px]">Grwt YTD</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {outletData.skuArr.map((r, i) => {
-                                            const grwtMtd = calcGrowth(r.mtd26, r.mtd25);
-                                            const grwtYtd = calcGrowth(r.ytd26, (r.sales25/12)*m); 
-
+                                            const grwtMTD = calcGrowth(r.mtd26, r.mtd25);
+                                            const grwtYTD = calcGrowth(r.ytd26, r.sales25); 
                                             return (
                                                 <tr key={i} className="hover:bg-yellow-50">
                                                     <td className="font-bold text-gray-800">{r.name}</td>
@@ -569,35 +575,30 @@
                                                     <td className="text-right text-gray-500">{formatCurr(r.targetMtd)}</td>
                                                     <td className="text-right text-gray-500">{formatCurr(r.mtd25)}</td>
                                                     <td className="text-right font-black text-blue-700">{formatCurr(r.mtd26)}</td>
-                                                    <td className={`text-center font-bold text-[10px] ${grwtMtd < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                                        {r.mtd26 > 0 && r.mtd25 === 0 ? 'NEW' : (r.mtd26 === 0 && r.mtd25 > 0 ? 'LOST' : fGrw(grwtMtd))}
+                                                    <td className={`text-center font-bold ${grwtMTD < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                        {r.mtd26 > 0 && r.mtd25 === 0 ? 'NEW' : (r.mtd26 === 0 ? 'LOST' : fGrw(grwtMTD))}
                                                     </td>
                                                     
                                                     <td className="text-right text-gray-500">{formatCurr(r.target)}</td>
                                                     <td className="text-right text-gray-500">{formatCurr(r.sales25)}</td>
                                                     <td className="text-right font-black text-orange-600">{formatCurr(r.ytd26)}</td>
-                                                    <td className={`text-center font-bold text-[10px] ${grwtYtd < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                                        {r.ytd26 > 0 && r.sales25 === 0 ? 'NEW' : (r.ytd26 === 0 && r.sales25 > 0 ? 'LOST' : fGrw(grwtYtd))}
+                                                    <td className={`text-center font-bold ${grwtYTD < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                        {r.ytd26 > 0 && r.sales25 === 0 ? 'NEW' : (r.ytd26 === 0 ? 'LOST' : fGrw(grwtYTD))}
                                                     </td>
                                                 </tr>
                                             );
                                         })}
                                         <tr className="total-row !bg-yellow-300">
                                             <td className="text-left font-black text-sm">TOTAL GABUNGAN</td>
-                                            
                                             <td className="text-right font-black text-gray-600">{formatCurr(outletData.targetMTD)}</td>
                                             <td className="text-right font-black text-gray-600">{formatCurr(outletData.totMtd25)}</td>
-                                            <td className="text-right font-black text-blue-800 text-sm">{formatCurr(outletData.totMtd26)}</td>
-                                            <td className={`text-center font-black ${calcGrowth(outletData.totMtd26, outletData.totMtd25) < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                                                {fGrw(calcGrowth(outletData.totMtd26, outletData.totMtd25))}
-                                            </td>
+                                            <td className="text-right font-black text-blue-800 text-lg">{formatCurr(outletData.totMtd26)}</td>
+                                            <td className="text-center font-black">-</td>
                                             
                                             <td className="text-right font-black text-gray-600">{formatCurr(outletData.targetFY)}</td>
                                             <td className="text-right font-black text-gray-600">{formatCurr(outletData.tot25)}</td>
-                                            <td className="text-right font-black text-orange-800 text-sm">{formatCurr(outletData.totYtd26)}</td>
-                                            <td className={`text-center font-black ${calcGrowth(outletData.totYtd26, (outletData.tot25/12)*m) < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                                                {fGrw(calcGrowth(outletData.totYtd26, (outletData.tot25/12)*m))}
-                                            </td>
+                                            <td className="text-right font-black text-orange-800 text-lg">{formatCurr(outletData.totYtd26)}</td>
+                                            <td className="text-center font-black">-</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -662,14 +663,11 @@
                 if(filterDivisi && filterDivisi !== 'ALL' && !divName.includes(filterDivisi)) return; 
                 
                 let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
-                let blnRaw = getVal(r, kBulan);
+                let bln = parseInt(getVal(r, kBulan));
                 
-                if (blnRaw) {
-                    let bln = parseInt(blnRaw);
-                    if (bln > 0) {
-                        if(bln === m) dMap.biz[biz].q_mtd += val;
-                        if(bln <= m) dMap.biz[biz].q_ytd += val;
-                    }
+                if (bln > 0) {
+                    if(bln === m) dMap.biz[biz].q_mtd += val;
+                    if(bln <= m) dMap.biz[biz].q_ytd += val;
                 } else {
                     dMap.biz[biz].q_mtd += parseNum(getVal(r, [`quota ${mName.toLowerCase()}`, `target ${mName.toLowerCase()}`]));
                     for(let i=0; i<m; i++) dMap.biz[biz].q_ytd += parseNum(getVal(r, [`quota ${mNames[i].toLowerCase()}`, `target ${mNames[i].toLowerCase()}`]));
@@ -867,7 +865,7 @@
                         </div>
                     </div>
 
-                    <div className="bg-white p-3 shadow-md w-full overflow-x-auto">
+                    <div className="bg-white p-3 border shadow-md w-full overflow-x-auto">
                         <div className="text-center mb-2"><h2 className="header-title">Performance By Division YTD {mName} 2026</h2></div>
                         <table className="excel-table w-full">
                             <thead><tr><th>biz</th><th className="text-left">Division</th><th>YTD {mName} 2026</th><th>Avg YTD 26</th><th>FY 2025</th><th>Avg 2025</th><th>YTD 2025</th><th>Avg YTD 25</th><th>Avg Grwt</th><th>YTD Grwt</th></tr></thead>
@@ -964,7 +962,7 @@
         };
 
         // ==========================================
-        // MENU 2: PARETO BRAND (FIXED 2025 READING & JUDUL PHG)
+        // MENU 3: PARETO BRAND 
         // ==========================================
         const ParetoBrandView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1025,7 +1023,6 @@
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
                     
-                    {/* TABEL CHG */}
                     <div className="bg-white p-3 border shadow-md w-full overflow-x-auto">
                         <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND BY BUSINESS TYPE YTD {mName} 2026 (CHG)</h2></div>
                         <table className="excel-table w-full">
@@ -1058,7 +1055,6 @@
                         </table>
                     </div>
 
-                    {/* TABEL PHG */}
                     <div className="bg-white p-3 border shadow-md w-full overflow-x-auto mt-6">
                         <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND BY BUSINESS TYPE YTD {mName} 2026 (PHG)</h2></div>
                         <table className="excel-table w-full">
@@ -1096,7 +1092,7 @@
         };
 
         // ==========================================
-        // MENU 3: BIG CITY PARETO
+        // MENU 4: BIG CITY PARETO
         // ==========================================
         const CityView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1205,7 +1201,7 @@
         };
 
         // ==========================================
-        // MENU 4: BUYING OUTLETS ANALYSIS
+        // MENU 5: BUYING OUTLETS ANALYSIS
         // ==========================================
         const OutletAnalysisView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1374,7 +1370,7 @@
         };
 
         // ==========================================
-        // MENU 5: NPD MONITORING 
+        // MENU 6: NPD MONITORING 
         // ==========================================
         const NPDView = ({ apiData }) => {
             if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1566,7 +1562,7 @@
         };
 
         // ==========================================
-        // MENU 6: SALES FORECAST (SCD & SUMMARY)
+        // MENU 7: SALES FORECAST (HARDCODED APL & PRODUCT FILTER)
         // ==========================================
         const ForecastView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1577,6 +1573,7 @@
 
             const m = parseInt(month) || 1;
             const [statusFilter, setStatusFilter] = useState('ALL');
+            const [searchProd, setSearchProd] = useState(''); // FITUR FILTER PRODUK
             
             const tableData = useMemo(() => {
                 const kCode = ['item code', 'kode barang', 'material code'];
@@ -1585,9 +1582,6 @@
                 const kHna = ['hna', 'harga dasar']; 
                 const kQty = ['qty', 'quantity'];
                 const kStockValue = ['jumlah stock', 'stock unit', 'stock qty', 'stok', 'stock', 'sisa']; 
-                
-                // MENGABAIKAN KOLOM DISTRIBUTOR DAN MEMAKSA SEMUANYA MENJADI APL
-                const getDistGroup = () => 'APL';
 
                 let itemData = {};
 
@@ -1595,7 +1589,7 @@
                     let code = getVal(r, kCode);
                     let name = getVal(r, kName);
                     if (!name && !code) return; 
-                    let dist = getDistGroup();
+                    let dist = 'APL'; // HARDCODED 100% APL SESUAI INSTRUKSI
                     let targetRp = 0;
                     let blnRaw = getVal(r, ['bulan', 'month', 'bln']);
                     let bln = parseInt(blnRaw);
@@ -1623,7 +1617,7 @@
                     let code = getVal(r, kCode);
                     let name = getVal(r, kName);
                     if (!name && !code) return;
-                    let dist = getDistGroup();
+                    let dist = 'APL'; // HARDCODED 100% APL
                     let salesVal = parseNum(getVal(r, kSales));
                     let salesQty = parseNum(getVal(r, kQty));
                     let hnaVal = parseNum(getVal(r, kHna));
@@ -1640,7 +1634,7 @@
                     let code = getVal(r, kCode);
                     let name = getVal(r, kName);
                     if (!name && !code) return;
-                    let dist = getDistGroup();
+                    let dist = 'APL'; // HARDCODED 100% APL
                     let stockUnit = parseNum(getVal(r, kStockValue));
                     let hnaVal = parseNum(getVal(r, kHna));
 
@@ -1679,18 +1673,17 @@
                 }).sort((a,b) => b.scd - a.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetRp > 0);
             }, [sales2026, target2026, stock, m]);
 
+            // FILTER STATUS DAN NAMA PRODUK
             const filteredData = tableData.filter(r => 
-                (statusFilter === 'ALL' || r.status.toUpperCase() === statusFilter)
+                (statusFilter === 'ALL' || r.status.toUpperCase() === statusFilter) &&
+                (searchProd === '' || String(r.name).toLowerCase().includes(searchProd.toLowerCase()))
             );
 
-            const fSum = {
-                'APL': { stockVal: 0, reqVal: 0, eoyVal: 0 }
-            };
-            
+            const fSum = { stockVal: 0, reqVal: 0, eoyVal: 0 };
             tableData.forEach(d => {
-                fSum['APL'].stockVal += (d.stockValue || 0);
-                fSum['APL'].reqVal += (d.requiredStockValue || 0);
-                fSum['APL'].eoyVal += (d.estEOYValue || 0);
+                fSum.stockVal += (d.stockValue || 0);
+                fSum.reqVal += (d.requiredStockValue || 0);
+                fSum.eoyVal += (d.estEOYValue || 0);
             });
 
             return (
@@ -1698,16 +1691,21 @@
                     <div className="bg-white p-6 border shadow animate-fade-in w-full">
                         <div className="flex flex-col md:flex-row justify-between items-center mb-4 border-b pb-2 gap-4">
                             <h2 className="text-xl font-black text-blue-900 mb-2 md:mb-0">Analisa Stock Forecast & Kebutuhan Akhir Tahun</h2>
-                            <div className="flex gap-4 no-print">
+                            <div className="flex flex-wrap gap-4 no-print">
+                                {/* TAMBAHAN FITUR FILTER NAMA PRODUK */}
                                 <div className="flex items-center">
-                                    <span className="text-[10px] font-bold text-gray-600 mr-2 uppercase">Gudang:</span>
-                                    <div className="border-2 border-blue-400 rounded p-1 text-xs font-bold text-blue-900 bg-blue-100 cursor-not-allowed">
-                                        APL (100% Data)
-                                    </div>
+                                    <span className="text-[10px] font-bold text-gray-600 mr-2 uppercase">Cari Produk:</span>
+                                    <input 
+                                        type="text" 
+                                        value={searchProd} 
+                                        onChange={(e) => setSearchProd(e.target.value)} 
+                                        placeholder="Ketik nama produk..."
+                                        className="border-2 border-gray-400 rounded p-1 text-xs font-bold text-gray-700 bg-white w-48"
+                                    />
                                 </div>
                                 <div className="flex items-center">
                                     <span className="text-[10px] font-bold text-gray-600 mr-2 uppercase">Status:</span>
-                                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border-2 border-orange-400 rounded p-1 text-xs font-bold text-gray-700 bg-orange-50 cursor-pointer">
+                                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border-2 border-orange-400 rounded p-1 text-xs font-bold text-gray-700 bg-orange-50">
                                         <option value="ALL">SEMUA STATUS</option>
                                         <option value="OVERSTOCK">OVERSTOCK (&gt; 90 Hari)</option>
                                         <option value="HEALTHY">HEALTHY (30 - 90 Hari)</option>
@@ -1755,28 +1753,27 @@
                             </table>
                         </div>
 
-                        {/* TABEL SUMMARY FORECAST (HANYA APL) */}
+                        {/* TABEL SUMMARY FORECAST */}
                         <div className="bg-slate-50 border border-gray-300 p-4 rounded-lg shadow-sm w-full">
-                            <h3 className="font-black text-lg mb-3 text-center uppercase tracking-widest text-slate-800 border-b border-gray-300 pb-2">📊 SUMMARY KEBUTUHAN STOCK & VALUE</h3>
+                            <h3 className="font-black text-lg mb-3 text-center uppercase tracking-widest text-slate-800 border-b border-gray-300 pb-2">📊 SUMMARY KEBUTUHAN STOCK & VALUE (ALL APL)</h3>
                             <table className="excel-table w-full text-lg">
                                 <thead>
                                     <tr>
-                                        <th className="bg-slate-200 text-left">Gudang</th>
+                                        <th className="bg-slate-200 text-left">Distributor</th>
                                         <th className="bg-blue-100 text-right text-blue-900">Total Value Stok Saat Ini (Rp)</th>
                                         <th className="bg-orange-100 text-right text-red-800">Value Kurang utk 60 Hr (Rp)</th>
                                         <th className="bg-green-100 text-right text-green-900">Value Est Beli s/d Akhir Thn (Rp)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr className="hover:bg-white !bg-yellow-100">
-                                        <td className="font-black text-lg">TOTAL APL PAPUA</td>
-                                        <td className="text-right font-black text-lg text-blue-900">{formatCurr(fSum['APL'].stockVal)}</td>
-                                        <td className="text-right font-black text-lg text-red-700">{formatCurr(fSum['APL'].reqVal)}</td>
-                                        <td className="text-right font-black text-lg text-green-800">{formatCurr(fSum['APL'].eoyVal)}</td>
+                                    <tr className="total-row !bg-yellow-300">
+                                        <td className="font-black text-lg">GRAND TOTAL</td>
+                                        <td className="text-right font-black text-lg text-blue-900">{formatCurr(fSum.stockVal)}</td>
+                                        <td className="text-right font-black text-lg text-red-700">{formatCurr(fSum.reqVal)}</td>
+                                        <td className="text-right font-black text-lg text-green-800">{formatCurr(fSum.eoyVal)}</td>
                                     </tr>
                                 </tbody>
                             </table>
-                            <p className="text-[10px] text-gray-500 mt-2 font-bold italic">*Sesuai kebijakan, 100% data stok dan forecast di atas diasumsikan berada di bawah naungan distributor APL.</p>
                         </div>
                     </div>
                 </div>
@@ -1784,7 +1781,7 @@
         };
 
         // ==========================================
-        // MENU 7: SUMMARY & PROJECTION (ADJUSTED ESTIMATION)
+        // MENU 8: SUMMARY & PROJECTION 
         // ==========================================
         const SummaryView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1802,11 +1799,21 @@
 
             const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total'];
             const kBulan = ['bulan', 'month', 'bln'];
+            const kBiz = ['business', 'bisnis', 'type', 'bussines'];
             const kDiv = ['division', 'divisi', 'div', 'departemen'];
             const kBrand = ['brand', 'sub_brand', 'sub brand']; 
             const kChan = ['cluster', 'channel', 'grup', 'tipe outlet'];
             const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust', 'outlet'];
 
+            const getBizType = (row) => {
+                let biz = String(getVal(row, kBiz) || '').trim().toUpperCase();
+                if(biz === 'PHG' || biz === 'CHG') return biz;
+                let div = String(getVal(row, kDiv) || '').toUpperCase();
+                if(div.includes('CARDIO') || div.includes('CHILD') || div.includes('CRITICAL') || div.includes('MEDICINE') || div.includes('WOMEN') || div.includes('WOUND') || div.includes('SPECIALTY')) return 'PHG';
+                if(div.includes('COMMON') || div.includes('HEALTH') || div.includes('PERSONAL') || div.includes('NATURAL')) return 'CHG';
+                return 'UNKNOWN';
+            };
+            
             let dMap = { 
                 biz: { 
                     PHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 }, 
@@ -1818,7 +1825,7 @@
             };
 
             target2026.forEach(r => {
-                let biz = detectBizType(r); if(biz==='UNKNOWN') return;
+                let biz = getBizType(r); if(biz==='UNKNOWN') return;
                 let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
                 let blnRaw = getVal(r, kBulan);
                 
@@ -1834,7 +1841,7 @@
 
             sales2026.forEach(r => {
                 let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                let biz = detectBizType(r);
+                let biz = getBizType(r);
                 let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase();
                 let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase();
                 let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase();
@@ -1863,7 +1870,7 @@
 
             sales2025.forEach(r => {
                 let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                let biz = detectBizType(r);
+                let biz = getBizType(r);
                 let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase();
                 let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase();
                 let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase();
@@ -1888,7 +1895,6 @@
                 }
             });
 
-            // PROJECTION FORMULA (WITH ADJUSTMENT TO ENSURE >95%)
             let rawChgEst = dMap.biz.CHG.ytd26_m > 0 ? (dMap.biz.CHG.ytd26_m / m) : 0; 
             let rawPhgEst = dMap.biz.PHG.ytd26_m > 0 ? (dMap.biz.PHG.ytd26_m / m) : 0; 
             let rawTotalEst = rawChgEst + rawPhgEst;
@@ -2201,7 +2207,7 @@
                                 {activeTab !== 'upload' && (
                                     <div className="flex items-center bg-gray-100 p-1 rounded border">
                                         <span className="mr-2 text-xs text-gray-500 uppercase">Set Bulan:</span>
-                                        <select value={filters.month} onChange={(e) => setFilters({month: e.target.value})} className="bg-white border p-1 font-black text-orange-600 text-xs cursor-pointer">
+                                        <select value={filters.month} onChange={(e) => setFilters({month: e.target.value})} className="bg-white border p-1 font-black text-orange-600 text-xs">
                                             {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Bln {m}</option>)}
                                         </select>
                                         <button onClick={() => window.print()} className="ml-2 bg-gray-800 hover:bg-black text-white px-2 py-1 rounded text-[10px] transition-colors cursor-pointer border border-gray-900 shadow">
@@ -2222,13 +2228,13 @@
                                     {outletSuggestions.map((n, i) => <option key={i} value={n} />)}
                                 </datalist>
                                 
-                                <select value={filterDistributor} onChange={(e) => setFilterDistributor(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-40 cursor-pointer">
+                                <select value={filterDistributor} onChange={(e) => setFilterDistributor(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-40">
                                     <option value="ALL">Semua Distributor</option>
                                     <option value="APL">Distributor: APL</option>
                                     <option value="KFT">Distributor: KFT & Others</option>
                                 </select>
                                 
-                                <select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-40 cursor-pointer">
+                                <select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-40">
                                     <option value="ALL">Semua Divisi</option>
                                     <option value="COMMON CURE">COMMON CURE (CHG)</option>
                                     <option value="HEALTH SUPPLEMENT">HEALTH SUPPLEMENT (CHG)</option>
@@ -2265,8 +2271,8 @@
                             activeTab === 'dashboard' ? <ReportSalesView apiData={apiData} month={filters.month} searchOutlet={searchOutlet} filterDivisi={filterDivisi} filterDistributor={filterDistributor} /> :
                             activeTab === 'pareto' ? <ParetoBrandView apiData={apiData} month={filters.month} /> :
                             activeTab === 'city' ? <CityView apiData={apiData} month={filters.month} /> :
-                            activeTab === 'npd' ? <NPDView apiData={apiData} /> :
                             activeTab === 'outlets' ? <OutletAnalysisView apiData={apiData} month={filters.month} /> :
+                            activeTab === 'npd' ? <NPDView apiData={apiData} /> :
                             activeTab === 'forecast' ? <ForecastView apiData={apiData} month={filters.month} /> :
                             <UploadView />
                         }
@@ -2284,3 +2290,4 @@
     </script>
 </body>
 </html>
+```eof
