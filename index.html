@@ -76,7 +76,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, Component } = React;
+        const { useState, useEffect, useMemo, Component, useRef } = React;
 
         const Recharts = window.Recharts || {};
         const ResponsiveContainer = Recharts.ResponsiveContainer || (({ children }) => <div className="w-full h-64">{children}</div>);
@@ -211,9 +211,69 @@
             );
         };
 
-        // ==========================================
-        // MENU 1: OUTLET PRESENTER (BUSINESS REVIEW)
-        // ==========================================
+        // KOMPONEN CUSTOM SEARCHABLE DROPDOWN
+        const SearchableSelect = ({ options, value, onChange, placeholder }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [search, setSearch] = useState(value || '');
+            const wrapperRef = useRef(null);
+
+            useEffect(() => {
+                setSearch(value === 'ALL' ? '🌟 KESELURUHAN PAPUA (ALL)' : (value || ''));
+            }, [value]);
+
+            useEffect(() => {
+                function handleClickOutside(event) {
+                    if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                        setIsOpen(false);
+                        setSearch(value === 'ALL' ? '🌟 KESELURUHAN PAPUA (ALL)' : (value || ''));
+                    }
+                }
+                document.addEventListener("mousedown", handleClickOutside);
+                return () => document.removeEventListener("mousedown", handleClickOutside);
+            }, [wrapperRef, value]);
+
+            const filteredOptions = options.filter(opt => 
+                opt.toLowerCase().includes(search.toLowerCase().replace('🌟 keseluruhan papua (all)', 'all'))
+            );
+
+            return (
+                <div ref={wrapperRef} className="relative w-[350px]">
+                    <input
+                        type="text"
+                        className="w-full p-2 rounded text-black font-bold uppercase shadow-inner border-2 border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 cursor-text"
+                        placeholder={placeholder}
+                        value={search}
+                        onClick={() => { setIsOpen(true); setSearch(''); }}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setIsOpen(true);
+                        }}
+                    />
+                    {isOpen && (
+                        <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-xl max-h-60 overflow-y-auto text-left">
+                            {filteredOptions.length === 0 ? (
+                                <li className="p-2 text-gray-500 text-sm italic">Outlet tidak ditemukan</li>
+                            ) : (
+                                filteredOptions.map((opt, i) => (
+                                    <li 
+                                        key={i} 
+                                        className="p-2 hover:bg-yellow-100 cursor-pointer border-b border-gray-100 text-xs font-bold text-gray-800"
+                                        onClick={() => {
+                                            onChange(opt);
+                                            setSearch(opt === 'ALL' ? '🌟 KESELURUHAN PAPUA (ALL)' : opt);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        {opt === 'ALL' ? '🌟 KESELURUHAN PAPUA (ALL)' : opt}
+                                    </li>
+                                ))
+                            )}
+                        </ul>
+                    )}
+                </div>
+            );
+        };
+
         const OutletPresenterView = ({ apiData, month, selectedOutlet, onSelectOutlet }) => {
             const [selectedMonthBR, setSelectedMonthBR] = useState(month);
 
@@ -345,25 +405,19 @@
                         <div className="relative z-10 flex flex-wrap justify-center items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <span className="text-yellow-400 font-bold text-sm">PILIH OUTLET:</span>
-                                <select 
+                                <SearchableSelect 
+                                    options={allOutlets} 
                                     value={selectedOutlet} 
-                                    onChange={(e) => onSelectOutlet(e.target.value)} 
-                                    className="w-[350px] p-2 rounded text-black font-bold uppercase shadow-inner border-2 border-yellow-400 focus:outline-none cursor-pointer"
-                                >
-                                    <option value="" disabled>-- Pilih Outlet / KESELURUHAN --</option>
-                                    {allOutlets.map((o, i) => (
-                                        <option key={i} value={o}>
-                                            {o === 'ALL' ? 'KESELURUHAN PAPUA (ALL)' : o}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={onSelectOutlet} 
+                                    placeholder="Cari Apotek/Grosir (Ketik disini)..." 
+                                />
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-yellow-400 font-bold text-sm">SET BULAN BR:</span>
                                 <select 
                                     value={selectedMonthBR} 
                                     onChange={(e) => setSelectedMonthBR(e.target.value)} 
-                                    className="p-2 rounded text-black font-bold shadow-inner border-2 border-yellow-400 focus:outline-none cursor-pointer"
+                                    className="p-2.5 rounded text-black font-bold shadow-inner border-2 border-yellow-400 focus:outline-none cursor-pointer"
                                 >
                                     {[1,2,3,4,5,6,7,8,9,10,11,12].map(mOpt => <option key={mOpt} value={mOpt}>Bulan {mOpt}</option>)}
                                 </select>
@@ -373,13 +427,13 @@
 
                     {!outletData ? (
                         <div className="p-12 text-center text-gray-400 font-bold bg-white border border-gray-200 rounded shadow-sm border-dashed">
-                            👆 Silakan pilih "KESELURUHAN PAPUA" untuk melihat rekapitulasi, atau pilih nama outlet spesifik beserta set bulan untuk memuat dashboard Business Review.
+                            👆 Silakan pilih "KESELURUHAN PAPUA" atau ketik nama outlet spesifik untuk memulai presentasi Business Review.
                         </div>
                     ) : (
                         <div className="space-y-6 w-full">
                             <div className="text-center print:block">
                                 <h1 className="text-3xl font-black text-blue-900 uppercase underline decoration-yellow-400 decoration-4 underline-offset-8">
-                                    {isAllMode ? "REKAPITULASI ALL OUTLETS (PAPUA)" : selectedOutlet}
+                                    {isAllMode ? "REKAPITULASI KESELURUHAN (PAPUA)" : selectedOutlet}
                                 </h1>
                                 <p className="text-gray-500 font-semibold mt-3">Business Review Report - MTD & YTD {mName} 2026</p>
                             </div>
@@ -452,7 +506,7 @@
                                 <div className="bg-red-50 p-4 border border-red-200 shadow-sm rounded h-full flex flex-col w-full">
                                     <div className="text-center mb-3 border-b border-red-200 pb-2">
                                         <h3 className="font-black text-sm text-red-800 uppercase tracking-wider">🛒 Saran Prioritas Order (Fokus MTD {mName})</h3>
-                                        <p className="text-[10px] text-red-600">Produk yang dibeli bulan {mName} tahun lalu (LY MTD), tapi bulan {mName} ini belum diorder sama sekali.</p>
+                                        <p className="text-[10px] text-red-600">Produk yang dibeli bulan {mName} tahun lalu (LY MTD), tapi bulan ini belum diorder sama sekali.</p>
                                     </div>
                                     <div className="flex-1 overflow-y-auto max-h-[220px]">
                                         <table className="w-full text-xs text-left border-collapse">
@@ -910,7 +964,7 @@
         };
 
         // ==========================================
-        // MENU 3: PARETO BRAND (FIXED 2025 READING & JUDUL PHG)
+        // MENU 2: PARETO BRAND (FIXED 2025 READING & JUDUL PHG)
         // ==========================================
         const ParetoBrandView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1004,7 +1058,7 @@
                         </table>
                     </div>
 
-                    {/* TABEL PHG (DIPISAH DENGAN JUDUL) */}
+                    {/* TABEL PHG */}
                     <div className="bg-white p-3 border shadow-md w-full overflow-x-auto mt-6">
                         <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND BY BUSINESS TYPE YTD {mName} 2026 (PHG)</h2></div>
                         <table className="excel-table w-full">
@@ -1042,7 +1096,7 @@
         };
 
         // ==========================================
-        // MENU 4: BIG CITY PARETO
+        // MENU 3: BIG CITY PARETO
         // ==========================================
         const CityView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1151,10 +1205,9 @@
         };
 
         // ==========================================
-        // MENU 5: BUYING OUTLETS ANALYSIS
+        // MENU 4: BUYING OUTLETS ANALYSIS
         // ==========================================
         const OutletAnalysisView = ({ apiData, month }) => {
-            const [viewMode, setViewMode] = useState('MTD'); 
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             const sales2026 = apiData.sales2026 || [];
@@ -1163,6 +1216,8 @@
             const m = parseInt(month) || 1;
             const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             const mName = mNames[m-1];
+            
+            const [viewMode, setViewMode] = useState('MTD'); 
             
             const kSales = ['sales', 'value', 'amount'];
             const kBulan = ['bulan', 'month'];
@@ -1319,7 +1374,7 @@
         };
 
         // ==========================================
-        // MENU 6: NPD MONITORING 
+        // MENU 5: NPD MONITORING 
         // ==========================================
         const NPDView = ({ apiData }) => {
             if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1511,7 +1566,7 @@
         };
 
         // ==========================================
-        // MENU 7: SALES FORECAST (SCD & SUMMARY)
+        // MENU 6: SALES FORECAST (SCD & SUMMARY)
         // ==========================================
         const ForecastView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1729,7 +1784,7 @@
         };
 
         // ==========================================
-        // MENU 8: SUMMARY & PROJECTION (ADJUSTED ESTIMATION)
+        // MENU 7: SUMMARY & PROJECTION (ADJUSTED ESTIMATION)
         // ==========================================
         const SummaryView = ({ apiData, month }) => {
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1842,7 +1897,6 @@
             let rawTotalAchEst = getP(rawTotalEst, totalQProj);
             let multiplier = 1;
 
-            // SAFETY NET: Paksa Total Estimasi Minimal 95%
             if (rawTotalAchEst < 95 && totalQProj > 0) {
                 let minimumRequiredEst = (95 / 100) * totalQProj;
                 multiplier = minimumRequiredEst / rawTotalEst; 
@@ -1850,7 +1904,7 @@
 
             const calcProjection = (bz, rawEst) => {
                 const data = dMap.biz[bz];
-                const est = rawEst * multiplier; // Terapkan multiplier proporsional
+                const est = rawEst * multiplier; 
                 const achEst = getP(est, data.q_projM);
                 
                 const avgYtdEst26 = (data.ytd26_m + est) / projM;
