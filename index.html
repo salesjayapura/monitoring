@@ -5,34 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Push Limits Dashboard</title>
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-    <!-- Recharts Dependencies & Library -->
     <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-is@18.2.0/umd/react-is.production.min.js"></script>
     <script crossorigin src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
-
-    <!-- SheetJS (Upload & Download Excel) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-    <!-- html2canvas (Download as Image) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #000; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #000; display: flex; flex-direction: column; min-height: 100vh; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
         
-        /* Compact Table Styles */
         .excel-table { width: 100%; border-collapse: collapse; background-color: #fff; font-size: 11px; }
         .excel-table th { border: 1px solid #000; background-color: #fde047; padding: 4px 4px; font-weight: bold; text-align: center; }
         .excel-table td { border: 1px solid #000; padding: 2px 4px; }
@@ -40,7 +28,6 @@
         
         .header-title { font-weight: 800; text-transform: uppercase; text-align: center; background-color: #fde047; padding: 4px 16px; display: inline-block; font-size: 14px; margin-bottom: 6px; border: 1px solid #000;}
         
-        /* Pewarnaan Minus dan Plus Mutlak */
         .text-red-alert { color: #dc2626 !important; font-weight: 900 !important; }
         .text-green-good { color: #16a34a !important; font-weight: 900 !important; }
         .text-gray-normal { color: #374151; font-weight: 700; }
@@ -57,12 +44,9 @@
         .city-title { font-weight: 900; text-transform: uppercase; margin-bottom: 2px; border-bottom: 1px solid #000; padding-bottom: 2px; font-size: 12px;}
         .city-stat { display: flex; justify-content: space-between; margin-bottom: 1px;}
 
-        @keyframes ping-map {
-            75%, 100% { transform: scale(2.5); opacity: 0; }
-        }
+        @keyframes ping-map { 75%, 100% { transform: scale(2.5); opacity: 0; } }
         .animate-ping-map { animation: ping-map 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
 
-        /* PRINT / PRESENTATION MODE CSS */
         @media print {
             .no-print, header, .global-filters { display: none !important; }
             body { background-color: #fff !important; font-size: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -71,7 +55,7 @@
             .animate-ping-map { animation: none !important; }
             table, .city-card { break-inside: avoid; }
             tr { break-inside: avoid; break-after: auto; }
-            main { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            main { max-width: 100% !important; margin: 0 !important; padding: 0 !important; flex: none; }
         }
     </style>
 </head>
@@ -79,6 +63,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        /* STREAMING_CHUNK:Inisialisasi Komponen Dasar React dan Helper */
         const { useState, useEffect, useMemo, Component, useRef } = React;
 
         const Recharts = window.Recharts || {};
@@ -122,9 +107,6 @@
             }
         }
 
-        // ==========================================
-        // GLOBAL EXPORT UTILITIES (EXCEL & IMAGE)
-        // ==========================================
         const exportToExcel = (menuName) => {
             const tables = document.querySelectorAll('main table.excel-table');
             if (tables.length === 0) {
@@ -145,7 +127,6 @@
             const mainElement = document.querySelector('main');
             if (!mainElement) return;
             
-            // Sedikit tweak agar elemen ter-capture penuh di mobile
             const oldWidth = mainElement.style.width;
             if (window.innerWidth < 1024) {
                 mainElement.style.width = '1200px'; 
@@ -169,9 +150,6 @@
             });
         };
 
-        // ==========================================
-        // GLOBAL UTILITIES
-        // ==========================================
         const getVal = (row, keywords) => {
             if (!row || typeof row !== 'object') return undefined;
             const keys = Object.keys(row);
@@ -264,22 +242,37 @@
             );
         };
 
-        // ==========================================
-        // MENU 1: OUTLET PRESENTER (BUSINESS REVIEW)
-        // ==========================================
+        /* STREAMING_CHUNK:Parent Component Business Review */
+        const BusinessReviewParentView = ({ apiData, globalMonth }) => {
+            const [brTab, setBrTab] = useState('presentasi'); 
+            const [presenterOutlet, setPresenterOutlet] = useState('');
+            
+            return (
+                <div className="w-full animate-fade-in">
+                    <div className="flex bg-blue-900 text-white rounded-t-lg overflow-hidden no-print">
+                        <button onClick={() => setBrTab('presentasi')} className={`flex-1 py-2 font-bold text-xs sm:text-sm ${brTab === 'presentasi' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>PRESENTASI BR</button>
+                        <button onClick={() => setBrTab('oht')} className={`flex-1 py-2 font-bold text-xs sm:text-sm ${brTab === 'oht' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>OHT MONITOR</button>
+                        <button onClick={() => setBrTab('pht')} className={`flex-1 py-2 font-bold text-xs sm:text-sm ${brTab === 'pht' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>PHT MONITOR</button>
+                    </div>
+                    <div className="bg-white border-x border-b border-gray-300 rounded-b-lg p-2 sm:p-4 shadow-sm">
+                        {brTab === 'presentasi' && <OutletPresenterView apiData={apiData} month={globalMonth} selectedOutlet={presenterOutlet} onSelectOutlet={setPresenterOutlet} />}
+                        {brTab === 'oht' && <OHTMonitoringView apiData={apiData} month={globalMonth} />}
+                        {brTab === 'pht' && <PHTMonitoringView apiData={apiData} month={globalMonth} />}
+                    </div>
+                </div>
+            );
+        };
+
+        /* STREAMING_CHUNK:Component Presentasi BR */
         const OutletPresenterView = ({ apiData, month, selectedOutlet, onSelectOutlet }) => {
             const [selectedMonthBR, setSelectedMonthBR] = useState(month);
+            const [selectedDistBR, setSelectedDistBR] = useState('ALL'); 
             const [searchTerm, setSearchTerm] = useState(selectedOutlet);
             const [isDropdownOpen, setIsDropdownOpen] = useState(false);
             const dropdownRef = useRef(null);
 
-            useEffect(() => {
-                setSelectedMonthBR(month);
-            }, [month]);
-
-            useEffect(() => {
-                setSearchTerm(selectedOutlet);
-            }, [selectedOutlet]);
+            useEffect(() => { setSelectedMonthBR(month); }, [month]);
+            useEffect(() => { setSearchTerm(selectedOutlet); }, [selectedOutlet]);
 
             useEffect(() => {
                 const handleClickOutside = (event) => {
@@ -296,13 +289,21 @@
                 let map = new Map();
                 const kName = ['customer name', 'nama pelanggan', 'nama outlet', 'outlet', 'customer_name'];
                 const kCode = ['customer code', 'kode pelanggan', 'cust code', 'outlet code'];
+                const kDist = ['distributor', 'dist', 'principal'];
 
                 const proc = (arr) => {
                     if(!arr) return;
                     arr.forEach(r => {
                         let n = String(getVal(r, kName) || '').trim().toUpperCase();
                         let c = String(getVal(r, kCode) || '').trim().toUpperCase();
-                        if (n && n !== 'UNDEFINED' && n !== '') {
+                        let dist = String(getVal(r, kDist) || 'APL').trim().toUpperCase();
+                        if(!dist || dist === 'UNDEFINED') dist = 'APL';
+
+                        let matchDist = true;
+                        if(selectedDistBR === 'APL' && !dist.includes('APL') && !dist.includes('ANUGERAH')) matchDist = false;
+                        if(selectedDistBR === 'KFT' && (dist.includes('APL') || dist.includes('ANUGERAH'))) matchDist = false;
+
+                        if (n && n !== 'UNDEFINED' && n !== '' && matchDist) {
                             let disp = (c && c !== 'UNDEFINED' && c !== '') ? `${c} - ${n}` : n;
                             map.set(n, disp);
                         }
@@ -316,15 +317,15 @@
                 let arr = Array.from(map.values()).sort();
                 arr.unshift("ALL (KESELURUHAN PAPUA)");
                 return arr;
-            }, [apiData]);
-
-            const m = parseInt(selectedMonthBR) || 1;
-            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            const mName = mNames[m-1];
+            }, [apiData, selectedDistBR]);
 
             const outletData = useMemo(() => {
-                if (!selectedOutlet) return null;
+                if (!apiData || !selectedOutlet) return null;
                 
+                const m = parseInt(selectedMonthBR) || 1;
+                const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const mName = mNames[m-1];
+
                 const isAllMode = selectedOutlet === 'ALL (KESELURUHAN PAPUA)';
                 const searchName = selectedOutlet.includes(' - ') ? selectedOutlet.split(' - ').slice(1).join(' - ') : selectedOutlet;
                 
@@ -333,15 +334,26 @@
                 const kBulan = ['bulan', 'month', 'bln'];
                 const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'outlet', 'customer_name'];
                 const kTarget = ['target', 'quota', 'sum of quota'];
+                const kDist = ['distributor', 'dist', 'principal'];
 
                 let targetFY = 0;
                 let targetMTD = 0;
                 let skuMap = {}; 
                 let skuChart = Array.from({length:12}, (_,i)=>({ name:mNames[i], sku26: new Set(), sku25: new Set(), totalSku26:0, totalSku25:0 }));
 
+                const isValidDist = (rowDist) => {
+                    if (selectedDistBR === 'ALL') return true;
+                    let d = String(rowDist || 'APL').toUpperCase();
+                    if(selectedDistBR === 'APL') return d.includes('APL') || d.includes('ANUGERAH');
+                    if(selectedDistBR === 'KFT') return !d.includes('APL') && !d.includes('ANUGERAH');
+                    return true;
+                };
+
                 apiData.target2026.forEach(r => {
                     let cName = String(getVal(r, kCustName) || '').trim().toUpperCase();
-                    if (isAllMode || cName === searchName || cName.includes(searchName)) {
+                    let dist = String(getVal(r, kDist) || 'APL').toUpperCase();
+
+                    if ((isAllMode || cName === searchName || cName.includes(searchName)) && isValidDist(dist)) {
                         let pName = String(getVal(r, kProd) || 'UNKNOWN').trim().toUpperCase();
                         let targetVal = parseNum(getVal(r, kTarget));
                         
@@ -384,7 +396,9 @@
 
                 apiData.sales2025.forEach(r => {
                     let cName = String(getVal(r, kCustName) || '').trim().toUpperCase();
-                    if (isAllMode || cName === searchName || cName.includes(searchName)) {
+                    let dist = String(getVal(r, kDist) || 'APL').toUpperCase();
+
+                    if ((isAllMode || cName === searchName || cName.includes(searchName)) && isValidDist(dist)) {
                         let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
                         let pName = String(getVal(r, kProd) || 'UNKNOWN').trim().toUpperCase();
                         let salesVal = parseNum(getVal(r, kSales));
@@ -399,7 +413,9 @@
 
                 apiData.sales2026.forEach(r => {
                     let cName = String(getVal(r, kCustName) || '').trim().toUpperCase();
-                    if (isAllMode || cName === searchName || cName.includes(searchName)) {
+                    let dist = String(getVal(r, kDist) || 'APL').toUpperCase();
+
+                    if ((isAllMode || cName === searchName || cName.includes(searchName)) && isValidDist(dist)) {
                         let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
                         let pName = String(getVal(r, kProd) || 'UNKNOWN').trim().toUpperCase();
                         let salesVal = parseNum(getVal(r, kSales));
@@ -427,19 +443,39 @@
                     d.totalSku25 = d.sku25.size;
                 });
 
-                return { targetFY, targetMTD, tot25, totYtd26, totMtd25, totMtd26, skuArr, skuChart };
+                return { targetFY, targetMTD, tot25, totYtd26, totMtd25, totMtd26, skuArr, skuChart, m, mName };
 
-            }, [selectedOutlet, apiData, m]);
+            }, [selectedOutlet, selectedMonthBR, selectedDistBR, apiData]);
+
+            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
-                <div className="space-y-6 animate-fade-in pb-12 w-full max-w-6xl mx-auto">
-                    <div className="bg-[#0f172a] p-6 rounded-xl shadow-lg border border-blue-900 text-center relative no-print z-30">
+                <div className="space-y-6 pb-12 w-full max-w-6xl mx-auto">
+                    <div className="bg-[#0f172a] p-4 sm:p-6 rounded-xl shadow-lg border border-blue-900 text-center relative no-print z-30">
                         <div className="absolute inset-0 opacity-20 rounded-xl overflow-hidden" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px'}}></div>
-                        <h2 className="text-2xl font-black text-white mb-4 relative z-10">PRESENTER BUSINESS REVIEW OUTLET</h2>
+                        <h2 className="text-xl sm:text-2xl font-black text-white mb-4 relative z-10">PRESENTER BUSINESS REVIEW OUTLET</h2>
                         <div className="relative z-10 flex flex-col md:flex-row justify-center items-center gap-4">
+                            
+                            <div className="flex items-center gap-2">
+                                <span className="text-orange-400 font-bold text-xs sm:text-sm shrink-0">DISTRIBUTOR:</span>
+                                <select 
+                                    value={selectedDistBR} 
+                                    onChange={(e) => {
+                                        setSelectedDistBR(e.target.value);
+                                        setSearchTerm(''); 
+                                        onSelectOutlet('');
+                                    }} 
+                                    className="p-1.5 sm:p-2 rounded text-black font-bold shadow-inner border-2 border-orange-400 focus:outline-none cursor-pointer w-[120px] sm:w-[150px] text-xs sm:text-sm"
+                                >
+                                    <option value="ALL">ALL DIST.</option>
+                                    <option value="APL">APL</option>
+                                    <option value="KFT">KFT / OTHERS</option>
+                                </select>
+                            </div>
+
                             <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto" ref={dropdownRef}>
-                                <span className="text-yellow-400 font-bold text-sm shrink-0">PILIH OUTLET:</span>
-                                <div className="relative w-full md:w-[400px]">
+                                <span className="text-yellow-400 font-bold text-xs sm:text-sm shrink-0">PILIH OUTLET:</span>
+                                <div className="relative w-full md:w-[350px]">
                                     <input 
                                         type="text" 
                                         value={searchTerm} 
@@ -449,7 +485,7 @@
                                         }} 
                                         onFocus={() => setIsDropdownOpen(true)}
                                         placeholder="KETIK 'ALL' ATAU NAMA APOTEK..." 
-                                        className="w-full p-2 rounded text-black font-bold uppercase shadow-inner border-2 border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-500/50 text-sm"
+                                        className="w-full p-1.5 sm:p-2 rounded text-black font-bold uppercase shadow-inner border-2 border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-500/50 text-xs sm:text-sm"
                                     />
                                     {isDropdownOpen && (
                                         <ul className="absolute z-50 w-full mt-1 bg-white border-2 border-yellow-400 rounded-md shadow-2xl max-h-60 overflow-y-auto text-left">
@@ -474,11 +510,11 @@
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-yellow-400 font-bold text-sm">SET BULAN BR:</span>
+                                <span className="text-yellow-400 font-bold text-xs sm:text-sm">BULAN BR:</span>
                                 <select 
                                     value={selectedMonthBR} 
                                     onChange={(e) => setSelectedMonthBR(e.target.value)} 
-                                    className="p-2 rounded text-black font-bold shadow-inner border-2 border-yellow-400 focus:outline-none cursor-pointer"
+                                    className="p-1.5 sm:p-2 rounded text-black font-bold shadow-inner border-2 border-yellow-400 focus:outline-none cursor-pointer w-[90px] sm:w-[100px] text-xs sm:text-sm"
                                 >
                                     {[1,2,3,4,5,6,7,8,9,10,11,12].map(mOpt => <option key={mOpt} value={mOpt}>Bulan {mOpt}</option>)}
                                 </select>
@@ -493,10 +529,10 @@
                     ) : (
                         <div className="space-y-6 w-full">
                             <div className="text-center print:block">
-                                <h1 className="text-3xl font-black text-blue-900 uppercase underline decoration-yellow-400 decoration-4 underline-offset-8">
+                                <h1 className="text-xl sm:text-3xl font-black text-blue-900 uppercase underline decoration-yellow-400 decoration-4 underline-offset-8">
                                     {selectedOutlet === 'ALL (KESELURUHAN PAPUA)' ? 'KESELURUHAN PAPUA (ALL OUTLETS)' : selectedOutlet}
                                 </h1>
-                                <p className="text-gray-500 font-semibold mt-3">Business Review Report - MTD/YTD {mName} 2026</p>
+                                <p className="text-xs sm:text-sm text-gray-500 font-semibold mt-3">Business Review Report - MTD/YTD {outletData.mName} 2026</p>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
@@ -504,18 +540,18 @@
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Target Total FY 2026</p>
                                     <h3 className="text-xl font-black text-blue-900">Rp {formatCurr(outletData.targetFY)}</h3>
                                     <div className="mt-2 pt-2 border-t border-gray-100">
-                                        <p className="text-[9px] text-gray-400">Target MTD {mName}: Rp {formatCurr(outletData.targetMTD)}</p>
+                                        <p className="text-[9px] text-gray-400">Target MTD {outletData.mName}: Rp {formatCurr(outletData.targetMTD)}</p>
                                     </div>
                                 </div>
                                 <div className="bg-white border-t-4 border-gray-400 p-3 rounded shadow-sm text-center">
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Transaksi 2025 (FY)</p>
                                     <h3 className="text-xl font-black text-gray-700">Rp {formatCurr(outletData.tot25)}</h3>
                                     <div className="mt-2 pt-2 border-t border-gray-100">
-                                        <p className="text-[9px] text-gray-400">MTD {mName} 2025: Rp {formatCurr(outletData.totMtd25)}</p>
+                                        <p className="text-[9px] text-gray-400">MTD {outletData.mName} 2025: Rp {formatCurr(outletData.totMtd25)}</p>
                                     </div>
                                 </div>
                                 <div className="bg-white border-t-4 border-orange-500 p-3 rounded shadow-sm text-center">
-                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">MTD Transaksi 2026 ({mName})</p>
+                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">MTD Transaksi 2026 ({outletData.mName})</p>
                                     <h3 className="text-2xl font-black text-orange-600">Rp {formatCurr(outletData.totMtd26)}</h3>
                                     <div className="mt-2 pt-2 border-t border-gray-100">
                                         <p className="text-[9px] text-gray-400 font-bold">Total YTD: Rp {formatCurr(outletData.totYtd26)}</p>
@@ -555,7 +591,7 @@
 
                                 <div className="bg-red-50 p-4 border border-red-200 shadow-sm rounded h-full flex flex-col w-full">
                                     <div className="text-center mb-3 border-b border-red-200 pb-2">
-                                        <h3 className="font-black text-sm text-red-800 uppercase tracking-wider">🛒 Saran Prioritas Order (Bulan {mName})</h3>
+                                        <h3 className="font-black text-sm text-red-800 uppercase tracking-wider">🛒 Saran Prioritas Order (Bulan {outletData.mName})</h3>
                                         <p className="text-[10px] text-red-600">Produk yang tahun lalu dibeli (LY MTD), tapi bulan ini belum diorder sama sekali.</p>
                                     </div>
                                     <div className="flex-1 overflow-y-auto max-h-[220px]">
@@ -586,13 +622,13 @@
                             </div>
 
                             <div className="bg-white p-4 border border-gray-300 shadow-sm rounded w-full">
-                                <h3 className="font-black text-sm text-center mb-3 bg-blue-100 text-blue-900 py-2 border border-blue-200">DETAIL TRANSAKSI PER PRODUK (SKU) - YTD & MTD BULAN {mName}</h3>
+                                <h3 className="font-black text-sm text-center mb-3 bg-blue-100 text-blue-900 py-2 border border-blue-200">DETAIL TRANSAKSI PER PRODUK (SKU) - YTD & MTD BULAN {outletData.mName}</h3>
                                 <div className="w-full overflow-x-auto">
-                                <table className="excel-table w-full">
+                                <table className="excel-table w-full min-w-[800px]">
                                     <thead className="sticky top-0 shadow-sm">
                                         <tr>
                                             <th rowSpan="2" className="text-left bg-gray-100">Nama Produk</th>
-                                            <th colSpan="4" className="bg-blue-50 text-blue-900 border-b border-blue-200">Performa MTD ({mName})</th>
+                                            <th colSpan="4" className="bg-blue-50 text-blue-900 border-b border-blue-200">Performa MTD ({outletData.mName})</th>
                                             <th colSpan="4" className="bg-orange-50 text-orange-900 border-b border-orange-200">Performa YTD</th>
                                         </tr>
                                         <tr>
@@ -613,7 +649,7 @@
                                             const grwtYTD = calcGrowth(r.ytd26, r.sales25); 
                                             return (
                                                 <tr key={i} className="hover:bg-yellow-50">
-                                                    <td className="font-bold text-gray-800">{r.name}</td>
+                                                    <td className="font-bold text-gray-800 whitespace-nowrap">{r.name}</td>
                                                     
                                                     <td className="text-right text-gray-500">{formatCurr(r.targetMtd)}</td>
                                                     <td className="text-right text-gray-500">{formatCurr(r.mtd25)}</td>
@@ -653,6 +689,489 @@
             );
         };
 
+        /* STREAMING_CHUNK:Sub-Menu OHT Monitoring */
+        const OHTMonitoringView = ({ apiData, month }) => {
+            const [selectedDist, setSelectedDist] = useState('ALL');
+            const [searchOutletOHT, setSearchOutletOHT] = useState('');
+            const [selectedMonthOHT, setSelectedMonthOHT] = useState(month);
+
+            useEffect(() => { setSelectedMonthOHT(month); }, [month]);
+
+            const m = parseInt(selectedMonthOHT) || 1;
+            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const mName = mNames[m-1];
+
+            const ohtRows = useMemo(() => {
+                if (!apiData) return [];
+                const kCode = ['customer code', 'kode pelanggan', 'cust code', 'outlet code'];
+                const kName = ['customer name', 'nama pelanggan', 'nama outlet', 'outlet', 'customer_name'];
+                const kDist = ['distributor', 'dist', 'principal'];
+                const kBulan = ['bulan', 'month', 'bln'];
+                const kSales = ['sum of sales', 'sales', 'value', 'amount'];
+                const kTarget = ['target', 'quota', 'sum of quota'];
+
+                let outMap = {}; 
+                let keyMap = {}; 
+
+                const registerOutlet = (r) => {
+                    let code = String(getVal(r, kCode) || '').trim().toUpperCase();
+                    let name = String(getVal(r, kName) || '').trim().toUpperCase();
+                    let dist = String(getVal(r, kDist) || 'APL').trim().toUpperCase();
+                    if(!dist || dist === 'UNDEFINED') dist = 'APL';
+
+                    if (name && name !== 'UNDEFINED' && name !== '') {
+                        if (!code || code === 'UNKNOWN') code = '-'; 
+                        let key = code + '|||' + name; 
+                        
+                        if (!outMap[key]) {
+                            outMap[key] = {
+                                code: code, name: name, dist: dist,
+                                targetMtd: 0, targetYtd: 0, hitMtd: 0, hitYtd: 0, hitMtd25: 0, hitYtd25: 0   
+                            };
+                            if (code !== '-') keyMap[code] = key; 
+                            keyMap[name] = key; 
+                        }
+                    }
+                };
+
+                if(apiData.target2026) apiData.target2026.forEach(registerOutlet);
+                if(apiData.sales2026) apiData.sales2026.forEach(registerOutlet);
+                if(apiData.sales2025) apiData.sales2025.forEach(registerOutlet);
+
+                const getTargetKey = (c, n) => {
+                    if (c && keyMap[c]) return keyMap[c];
+                    if (n && keyMap[n]) return keyMap[n];
+                    return null;
+                };
+
+                if(apiData.target2026) {
+                    apiData.target2026.forEach(r => {
+                        let c = String(getVal(r, kCode) || '').trim().toUpperCase();
+                        let n = String(getVal(r, kName) || '').trim().toUpperCase();
+                        let key = getTargetKey(c, n);
+                        if (!key) return;
+
+                        let tVal = parseNum(getVal(r, kTarget));
+                        let blnRaw = getVal(r, kBulan);
+
+                        if (blnRaw && !isNaN(parseInt(blnRaw))) {
+                            let bln = parseInt(blnRaw);
+                            outMap[key].targetYtd += tVal;
+                            if (bln === m) outMap[key].targetMtd += tVal;
+                        } else {
+                            let found = false;
+                            ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach((mon, idx) => {
+                                let v = parseNum(getVal(r, [`quota ${mon}`, `target ${mon}`, `sum of quota ${mon}`]));
+                                if (v > 0) {
+                                    outMap[key].targetYtd += v;
+                                    if (idx + 1 <= m) { if (idx + 1 === m) outMap[key].targetMtd += v; }
+                                    found = true;
+                                }
+                            });
+                            if (!found) {
+                                outMap[key].targetYtd += tVal;
+                                outMap[key].targetMtd += (tVal / 12);
+                            }
+                        }
+                    });
+                }
+
+                if(apiData.sales2026) {
+                    apiData.sales2026.forEach(r => {
+                        let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                        let c = String(getVal(r, kCode) || '').trim().toUpperCase();
+                        let n = String(getVal(r, kName) || '').trim().toUpperCase();
+                        let key = getTargetKey(c, n);
+                        if (!key) return;
+
+                        let sVal = parseNum(getVal(r, kSales));
+                        if (bln <= m) outMap[key].hitYtd += sVal;
+                        if (bln === m) outMap[key].hitMtd += sVal;
+                    });
+                }
+
+                if(apiData.sales2025) {
+                    apiData.sales2025.forEach(r => {
+                        let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                        let c = String(getVal(r, kCode) || '').trim().toUpperCase();
+                        let n = String(getVal(r, kName) || '').trim().toUpperCase();
+                        let key = getTargetKey(c, n);
+                        if (!key) return;
+
+                        let sVal = parseNum(getVal(r, kSales));
+                        if (bln <= m) outMap[key].hitYtd25 += sVal;
+                        if (bln === m) outMap[key].hitMtd25 += sVal;
+                    });
+                }
+
+                return Object.values(outMap).map(d => {
+                    let growthMtd = calcGrowth(d.hitMtd, d.hitMtd25);
+                    let growthYtd = calcGrowth(d.hitYtd, d.hitYtd25);
+                    let gapMtd = d.hitMtd - d.targetMtd;
+                    let gapYtd = d.hitYtd - d.targetYtd;
+                    return { ...d, growthMtd, growthYtd, gapMtd, gapYtd };
+                }).sort((a, b) => b.hitMtd - a.hitMtd);
+
+            }, [apiData, m]);
+
+            const filteredOHT = useMemo(() => {
+                return ohtRows.filter(r => {
+                    let matchDist = true;
+                    if(selectedDist === 'APL' && !r.dist.includes('APL') && !r.dist.includes('ANUGERAH')) matchDist = false;
+                    if(selectedDist === 'KFT' && (r.dist.includes('APL') || r.dist.includes('ANUGERAH'))) matchDist = false;
+                    
+                    let matchSearch = searchOutletOHT === '' || r.name.toLowerCase().includes(searchOutletOHT.toLowerCase()) || r.code.toLowerCase().includes(searchOutletOHT.toLowerCase());
+                    return matchDist && matchSearch;
+                });
+            }, [ohtRows, selectedDist, searchOutletOHT]);
+
+            const ohtSummary = useMemo(() => {
+                return filteredOHT.reduce((acc, curr) => {
+                    acc.targetMtd += curr.targetMtd; acc.targetYtd += curr.targetYtd;
+                    acc.hitMtd += curr.hitMtd; acc.hitYtd += curr.hitYtd;
+                    acc.hitMtd25 += curr.hitMtd25; acc.hitYtd25 += curr.hitYtd25;
+                    acc.gapMtd += curr.gapMtd; acc.gapYtd += curr.gapYtd;
+                    return acc;
+                }, { targetMtd: 0, targetYtd: 0, hitMtd: 0, hitYtd: 0, hitMtd25: 0, hitYtd25: 0, gapMtd: 0, gapYtd: 0 });
+            }, [filteredOHT]);
+
+            const totalGrowthMtd = calcGrowth(ohtSummary.hitMtd, ohtSummary.hitMtd25);
+            const totalGrowthYtd = calcGrowth(ohtSummary.hitYtd, ohtSummary.hitYtd25);
+
+            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            return (
+                <div className="space-y-6 w-full">
+                    <div className="text-center mb-4">
+                        <h2 className="header-title !text-xl !px-12">OHT MONITORING (OUTLET HIT TARGET) - BULAN {mName.toUpperCase()} 2026</h2>
+                        <p className="text-xs text-gray-500 font-semibold italic">Evaluasi Pencapaian Target Outlet MTD & YTD</p>
+                    </div>
+
+                    <div className="bg-slate-50 p-2 sm:p-4 border border-gray-300 rounded-lg mb-6 flex flex-wrap gap-2 sm:gap-4 justify-between items-center no-print">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase">Filter Distributor:</span>
+                            <select value={selectedDist} onChange={(e) => setSelectedDist(e.target.value)} className="border-2 border-blue-400 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold bg-white w-24 sm:w-auto">
+                                <option value="ALL">ALL DIST</option>
+                                <option value="APL">APL</option>
+                                <option value="KFT">KFT & OTHERS</option>
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase">Cari Outlet:</span>
+                            <input type="text" value={searchOutletOHT} onChange={(e) => setSearchOutletOHT(e.target.value)} placeholder="Ketik kode / nama outlet..." className="border-2 border-green-500 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold bg-white w-32 sm:w-60" />
+                        </div>
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase">Bulan:</span>
+                            <select value={selectedMonthOHT} onChange={(e) => setSelectedMonthOHT(e.target.value)} className="border-2 border-amber-500 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold bg-white text-orange-600">
+                                {[1,2,3,4,5,6,7,8,9,10,11,12].map(mOpt => <option key={mOpt} value={mOpt}>Bulan {mOpt}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-[600px] w-full">
+                        <table className="excel-table w-full min-w-[1000px]">
+                            <thead className="sticky top-0 shadow z-20">
+                                <tr>
+                                    <th className="bg-blue-300">Kode Outlet</th>
+                                    <th className="text-left bg-blue-300">Nama Outlet</th>
+                                    <th className="text-right bg-blue-300">Target Outlet MTD</th>
+                                    <th className="text-right bg-blue-300">Target Outlet YTD</th>
+                                    <th className="text-right bg-blue-300">HIT MTD</th>
+                                    <th className="text-right bg-blue-300">LY MTD 2025</th>
+                                    <th className="text-right bg-blue-300">HIT YTD</th>
+                                    <th className="text-right bg-blue-300">LY YTD 2025</th>
+                                    <th className="text-center bg-blue-300">Growth mtd</th>
+                                    <th className="text-center bg-blue-300">Growth YTD</th>
+                                    <th className="text-right bg-blue-300">GAP MTD</th>
+                                    <th className="text-right bg-blue-300">GAP YTD</th>
+                                </tr>
+                                <tr className="bg-blue-50 border-b-2 border-black">
+                                    <th colSpan="2" className="text-right text-gray-500 font-normal italic pr-2">Total Summary ➔</th>
+                                    <th className="text-right font-black text-gray-800">{formatCurr(ohtSummary.targetMtd)}</th>
+                                    <th className="text-right font-black text-gray-800">{formatCurr(ohtSummary.targetYtd)}</th>
+                                    <th className="text-right font-black text-blue-700">{formatCurr(ohtSummary.hitMtd)}</th>
+                                    <th className="text-right font-black text-gray-600">{formatCurr(ohtSummary.hitMtd25)}</th>
+                                    <th className="text-right font-black text-orange-600">{formatCurr(ohtSummary.hitYtd)}</th>
+                                    <th className="text-right font-black text-gray-600">{formatCurr(ohtSummary.hitYtd25)}</th>
+                                    <th className={`text-center font-black ${cGrw(totalGrowthMtd)}`}>{fGrw(totalGrowthMtd)}</th>
+                                    <th className={`text-center font-black ${cGrw(totalGrowthYtd)}`}>{fGrw(totalGrowthYtd)}</th>
+                                    <th className={`text-right font-black ${ohtSummary.gapMtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(ohtSummary.gapMtd)}</th>
+                                    <th className={`text-right font-black ${ohtSummary.gapYtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(ohtSummary.gapYtd)}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredOHT.length === 0 ? (
+                                    <tr><td colSpan="12" className="text-center py-6 text-gray-400 font-bold">Tidak ada data outlet yang cocok dengan filter.</td></tr>
+                                ) : (
+                                    filteredOHT.map((r, i) => (
+                                        <tr key={i} className="hover:bg-yellow-50">
+                                            <td className="text-center font-bold text-blue-900">{r.code}</td>
+                                            <td className="text-left font-semibold whitespace-nowrap">{r.name}</td>
+                                            <td className="text-right">{formatCurr(r.targetMtd)}</td>
+                                            <td className="text-right">{formatCurr(r.targetYtd)}</td>
+                                            <td className="text-right font-black text-blue-700 bg-blue-50/50">{formatCurr(r.hitMtd)}</td>
+                                            <td className="text-right text-gray-500">{formatCurr(r.hitMtd25)}</td>
+                                            <td className="text-right font-black text-orange-600 bg-orange-50/50">{formatCurr(r.hitYtd)}</td>
+                                            <td className="text-right text-gray-500">{formatCurr(r.hitYtd25)}</td>
+                                            <td className={`text-center font-bold ${cGrw(r.growthMtd)}`}>{fGrw(r.growthMtd)}</td>
+                                            <td className={`text-center font-bold ${cGrw(r.growthYtd)}`}>{fGrw(r.growthYtd)}</td>
+                                            <td className={`text-right font-black ${r.gapMtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(r.gapMtd)}</td>
+                                            <td className={`text-right font-black ${r.gapYtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(r.gapYtd)}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        /* STREAMING_CHUNK:Sub-Menu PHT Monitoring */
+        const PHTMonitoringView = ({ apiData, month }) => {
+            const [selectedDist, setSelectedDist] = useState('ALL');
+            const [searchProdPHT, setSearchProdPHT] = useState('');
+            const [selectedMonthPHT, setSelectedMonthPHT] = useState(month);
+
+            useEffect(() => { setSelectedMonthPHT(month); }, [month]);
+
+            const m = parseInt(selectedMonthPHT) || 1;
+            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const mName = mNames[m-1];
+
+            const phtRows = useMemo(() => {
+                if (!apiData) return [];
+                const kCode = ['item code', 'kode barang', 'material code'];
+                const kName = ['product name', 'nama produk', 'material'];
+                const kBulan = ['bulan', 'month', 'bln'];
+                const kSales = ['sum of sales', 'sales', 'value', 'amount'];
+                const kTarget = ['target', 'quota', 'sum of quota'];
+                const kDist = ['distributor', 'dist', 'principal'];
+
+                let prodMap = {}; 
+                let keyMap = {}; 
+
+                const registerProd = (r) => {
+                    let code = String(getVal(r, kCode) || '').trim().toUpperCase();
+                    let name = String(getVal(r, kName) || '').trim().toUpperCase();
+                    let dist = String(getVal(r, kDist) || 'APL').trim().toUpperCase();
+                    if(!dist || dist === 'UNDEFINED') dist = 'APL';
+                    let biz = detectBizType(r);
+
+                    if (name && name !== 'UNDEFINED' && name !== '') {
+                        if (!code || code === 'UNKNOWN') code = '-'; 
+                        let key = code + '|||' + name; 
+                        
+                        if (!prodMap[key]) {
+                            prodMap[key] = {
+                                code: code, name: name, dist: dist, biz: biz,
+                                targetMtd: 0, targetYtd: 0, hitMtd: 0, hitYtd: 0, hitMtd25: 0, hitYtd25: 0   
+                            };
+                            if (code !== '-') keyMap[code] = key; 
+                            keyMap[name] = key; 
+                        }
+                    }
+                };
+
+                if(apiData.target2026) apiData.target2026.forEach(registerProd);
+                if(apiData.sales2026) apiData.sales2026.forEach(registerProd);
+                if(apiData.sales2025) apiData.sales2025.forEach(registerProd);
+
+                const getTargetKey = (c, n) => {
+                    if (c && keyMap[c]) return keyMap[c];
+                    if (n && keyMap[n]) return keyMap[n];
+                    return null;
+                };
+
+                if(apiData.target2026) {
+                    apiData.target2026.forEach(r => {
+                        let c = String(getVal(r, kCode) || '').trim().toUpperCase();
+                        let n = String(getVal(r, kName) || '').trim().toUpperCase();
+                        let key = getTargetKey(c, n);
+                        if (!key) return;
+
+                        let tVal = parseNum(getVal(r, kTarget));
+                        let blnRaw = getVal(r, kBulan);
+
+                        if (blnRaw && !isNaN(parseInt(blnRaw))) {
+                            let bln = parseInt(blnRaw);
+                            prodMap[key].targetYtd += tVal;
+                            if (bln === m) prodMap[key].targetMtd += tVal;
+                        } else {
+                            let found = false;
+                            ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach((mon, idx) => {
+                                let v = parseNum(getVal(r, [`quota ${mon}`, `target ${mon}`, `sum of quota ${mon}`]));
+                                if (v > 0) {
+                                    prodMap[key].targetYtd += v;
+                                    if (idx + 1 <= m) { if (idx + 1 === m) prodMap[key].targetMtd += v; }
+                                    found = true;
+                                }
+                            });
+                            if (!found) {
+                                prodMap[key].targetYtd += tVal;
+                                prodMap[key].targetMtd += (tVal / 12);
+                            }
+                        }
+                    });
+                }
+
+                if(apiData.sales2026) {
+                    apiData.sales2026.forEach(r => {
+                        let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                        let c = String(getVal(r, kCode) || '').trim().toUpperCase();
+                        let n = String(getVal(r, kName) || '').trim().toUpperCase();
+                        let key = getTargetKey(c, n);
+                        if (!key) return;
+
+                        let sVal = parseNum(getVal(r, kSales));
+                        if (bln <= m) prodMap[key].hitYtd += sVal;
+                        if (bln === m) prodMap[key].hitMtd += sVal;
+                    });
+                }
+
+                if(apiData.sales2025) {
+                    apiData.sales2025.forEach(r => {
+                        let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                        let c = String(getVal(r, kCode) || '').trim().toUpperCase();
+                        let n = String(getVal(r, kName) || '').trim().toUpperCase();
+                        let key = getTargetKey(c, n);
+                        if (!key) return;
+
+                        let sVal = parseNum(getVal(r, kSales));
+                        if (bln <= m) prodMap[key].hitYtd25 += sVal;
+                        if (bln === m) prodMap[key].hitMtd25 += sVal;
+                    });
+                }
+
+                return Object.values(prodMap).map(d => {
+                    let growthMtd = calcGrowth(d.hitMtd, d.hitMtd25);
+                    let growthYtd = calcGrowth(d.hitYtd, d.hitYtd25);
+                    let gapMtd = d.hitMtd - d.targetMtd;
+                    let gapYtd = d.hitYtd - d.targetYtd;
+                    return { ...d, growthMtd, growthYtd, gapMtd, gapYtd };
+                }).sort((a, b) => b.hitMtd - a.hitMtd);
+
+            }, [apiData, m]);
+
+            const filteredPHT = useMemo(() => {
+                return phtRows.filter(r => {
+                    let matchDist = true;
+                    if(selectedDist === 'APL' && !r.dist.includes('APL') && !r.dist.includes('ANUGERAH')) matchDist = false;
+                    if(selectedDist === 'KFT' && (r.dist.includes('APL') || r.dist.includes('ANUGERAH'))) matchDist = false;
+                    
+                    let matchSearch = searchProdPHT === '' || r.name.toLowerCase().includes(searchProdPHT.toLowerCase()) || r.code.toLowerCase().includes(searchProdPHT.toLowerCase());
+                    return matchDist && matchSearch;
+                });
+            }, [phtRows, selectedDist, searchProdPHT]);
+
+            const phtSummary = useMemo(() => {
+                return filteredPHT.reduce((acc, curr) => {
+                    acc.targetMtd += curr.targetMtd; acc.targetYtd += curr.targetYtd;
+                    acc.hitMtd += curr.hitMtd; acc.hitYtd += curr.hitYtd;
+                    acc.hitMtd25 += curr.hitMtd25; acc.hitYtd25 += curr.hitYtd25;
+                    acc.gapMtd += curr.gapMtd; acc.gapYtd += curr.gapYtd;
+                    return acc;
+                }, { targetMtd: 0, targetYtd: 0, hitMtd: 0, hitYtd: 0, hitMtd25: 0, hitYtd25: 0, gapMtd: 0, gapYtd: 0 });
+            }, [filteredPHT]);
+
+            const totalGrowthMtd = calcGrowth(phtSummary.hitMtd, phtSummary.hitMtd25);
+            const totalGrowthYtd = calcGrowth(phtSummary.hitYtd, phtSummary.hitYtd25);
+
+            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+
+            return (
+                <div className="space-y-6 w-full">
+                    <div className="bg-white p-6 border shadow-md w-full">
+                        <div className="text-center mb-6">
+                            <h2 className="header-title !text-xl !px-12">PHT MONITORING (PRODUK HIT TARGET) - BULAN {mName.toUpperCase()} 2026</h2>
+                            <p className="text-xs text-gray-500 font-semibold italic">Evaluasi Pencapaian Target Per Produk (SKU) MTD & YTD</p>
+                        </div>
+
+                        <div className="bg-slate-50 p-2 sm:p-4 border border-gray-300 rounded-lg mb-6 flex flex-wrap gap-2 sm:gap-4 justify-between items-center no-print">
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase">Filter Distributor:</span>
+                                <select value={selectedDist} onChange={(e) => setSelectedDist(e.target.value)} className="border-2 border-blue-400 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold bg-white w-24 sm:w-auto">
+                                    <option value="ALL">ALL DIST</option>
+                                    <option value="APL">APL</option>
+                                    <option value="KFT">KFT & OTHERS</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase">Cari Produk:</span>
+                                <input type="text" value={searchProdPHT} onChange={(e) => setSearchProdPHT(e.target.value)} placeholder="Ketik kode / nama produk..." className="border-2 border-green-500 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold bg-white w-32 sm:w-60" />
+                            </div>
+                            <div className="flex items-center gap-1 sm:gap-2">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase">Bulan:</span>
+                                <select value={selectedMonthPHT} onChange={(e) => setSelectedMonthPHT(e.target.value)} className="border-2 border-amber-500 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold bg-white text-orange-600">
+                                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(mOpt => <option key={mOpt} value={mOpt}>Bulan {mOpt}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto max-h-[600px] w-full">
+                            <table className="excel-table w-full min-w-[1000px]">
+                                <thead className="sticky top-0 shadow z-20">
+                                    <tr>
+                                        <th className="bg-blue-300">Kode Produk</th>
+                                        <th className="text-left bg-blue-300">Nama Produk</th>
+                                        <th className="text-center bg-blue-300">Business Type</th>
+                                        <th className="text-right bg-blue-300">Target Produk MTD</th>
+                                        <th className="text-right bg-blue-300">Target Produk YTD</th>
+                                        <th className="text-right bg-blue-300">HIT MTD</th>
+                                        <th className="text-right bg-blue-300">LY MTD 2025</th>
+                                        <th className="text-right bg-blue-300">HIT YTD</th>
+                                        <th className="text-right bg-blue-300">LY YTD 2025</th>
+                                        <th className="text-center bg-blue-300">Growth mtd</th>
+                                        <th className="text-center bg-blue-300">Growth YTD</th>
+                                        <th className="text-right bg-blue-300">GAP MTD</th>
+                                        <th className="text-right bg-blue-300">GAP YTD</th>
+                                    </tr>
+                                    <tr className="bg-blue-50 border-b-2 border-black">
+                                        <th colSpan="3" className="text-right text-gray-500 font-normal italic pr-2">Total Summary ➔</th>
+                                        <th className="text-right font-black text-gray-800">{formatCurr(phtSummary.targetMtd)}</th>
+                                        <th className="text-right font-black text-gray-800">{formatCurr(phtSummary.targetYtd)}</th>
+                                        <th className="text-right font-black text-blue-700">{formatCurr(phtSummary.hitMtd)}</th>
+                                        <th className="text-right font-black text-gray-600">{formatCurr(phtSummary.hitMtd25)}</th>
+                                        <th className="text-right font-black text-orange-600">{formatCurr(phtSummary.hitYtd)}</th>
+                                        <th className="text-right font-black text-gray-600">{formatCurr(phtSummary.hitYtd25)}</th>
+                                        <th className={`text-center font-black ${cGrw(totalGrowthMtd)}`}>{fGrw(totalGrowthMtd)}</th>
+                                        <th className={`text-center font-black ${cGrw(totalGrowthYtd)}`}>{fGrw(totalGrowthYtd)}</th>
+                                        <th className={`text-right font-black ${phtSummary.gapMtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(phtSummary.gapMtd)}</th>
+                                        <th className={`text-right font-black ${phtSummary.gapYtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(phtSummary.gapYtd)}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredPHT.length === 0 ? (
+                                        <tr><td colSpan="13" className="text-center py-6 text-gray-400 font-bold">Tidak ada data produk yang cocok dengan filter.</td></tr>
+                                    ) : (
+                                        filteredPHT.map((r, i) => (
+                                            <tr key={i} className="hover:bg-yellow-50">
+                                                <td className="text-center font-bold text-blue-900">{r.code}</td>
+                                                <td className="text-left font-semibold whitespace-nowrap">{r.name}</td>
+                                                <td className="text-center font-bold text-gray-700">{r.biz}</td>
+                                                <td className="text-right">{formatCurr(r.targetMtd)}</td>
+                                                <td className="text-right">{formatCurr(r.targetYtd)}</td>
+                                                <td className="text-right font-black text-blue-700 bg-blue-50/50">{formatCurr(r.hitMtd)}</td>
+                                                <td className="text-right text-gray-500">{formatCurr(r.hitMtd25)}</td>
+                                                <td className="text-right font-black text-orange-600 bg-orange-50/50">{formatCurr(r.hitYtd)}</td>
+                                                <td className="text-right text-gray-500">{formatCurr(r.hitYtd25)}</td>
+                                                <td className={`text-center font-bold ${cGrw(r.growthMtd)}`}>{fGrw(r.growthMtd)}</td>
+                                                <td className={`text-center font-bold ${cGrw(r.growthYtd)}`}>{fGrw(r.growthYtd)}</td>
+                                                <td className={`text-right font-black ${r.gapMtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(r.gapMtd)}</td>
+                                                <td className={`text-right font-black ${r.gapYtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(r.gapYtd)}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        /* STREAMING_CHUNK:Component Report Sales */
         // ==========================================
         // MENU 2: REPORT SALES
         // ==========================================
@@ -1007,94 +1526,152 @@
             );
         };
 
+        /* STREAMING_CHUNK:Component Pareto Brand, City, Outlet Analysis, NPD, Forecast, Summary, Upload */
         // ==========================================
         // MENU 3: PARETO BRAND 
         // ==========================================
         const ParetoBrandView = ({ apiData, month }) => {
-            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+            const [selectedDist, setSelectedDist] = useState('ALL');
+            const [viewMode, setViewMode] = useState('YTD'); // MTD or YTD
 
-            const sales2026 = apiData.sales2026 || [];
-            const sales2025 = apiData.sales2025 || [];
+            const paretoData = useMemo(() => {
+                if (!apiData) return null;
+                const sales2026 = apiData.sales2026 || [];
+                const sales2025 = apiData.sales2025 || [];
 
-            const m = parseInt(month) || 1;
-            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            const mName = mNames[m-1];
+                const m = parseInt(month) || 1;
+                const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const mName = mNames[m-1];
 
-            const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total', 'ach'];
-            const kBulan = ['bulan', 'month'];
-            const kDiv = ['division', 'divisi'];
-            const kBrand = ['brand', 'sub_brand', 'sub brand']; 
+                const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total', 'ach'];
+                const kBulan = ['bulan', 'month'];
+                const kDiv = ['division', 'divisi'];
+                const kBrand = ['brand', 'sub_brand', 'sub brand']; 
+                const kDist = ['distributor', 'dist', 'principal'];
 
-            let bMap = { PHG:{}, CHG:{} };
+                let bMap = { PHG:{}, CHG:{} };
 
-            const processPareto = (r, is2025) => {
-                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                let biz = detectBizType(r);
-                let div = String(getVal(r, kDiv) || 'UNASSIGNED').toUpperCase();
-                let brand = String(getVal(r, kBrand) || '').trim().toUpperCase();
-                let sales = parseNum(getVal(r, kSales));
+                const processPareto = (r, is2025) => {
+                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                    
+                    let dist = String(getVal(r, kDist) || 'APL').toUpperCase();
+                    let matchDist = true;
+                    if(selectedDist === 'APL' && !dist.includes('APL') && !dist.includes('ANUGERAH')) matchDist = false;
+                    if(selectedDist === 'KFT' && (dist.includes('APL') || dist.includes('ANUGERAH'))) matchDist = false;
+                    if (!matchDist) return;
 
-                if (!brand || brand === 'UNASSIGNED' || brand === 'UNDEFINED' || brand === '0' || brand === '-') return;
+                    let biz = detectBizType(r);
+                    let div = String(getVal(r, kDiv) || 'UNASSIGNED').toUpperCase();
+                    let brand = String(getVal(r, kBrand) || '').trim().toUpperCase();
+                    let sales = parseNum(getVal(r, kSales));
 
-                if(biz === 'PHG' || biz === 'CHG') {
-                    if(!bMap[biz][brand]) bMap[biz][brand] = {div, y26:0, y25:0, f25:0};
-                    if(is2025) {
-                        bMap[biz][brand].f25 += sales; 
-                        if(bln <= m) bMap[biz][brand].y25 += sales; 
-                    } else {
-                        if(bln <= m) bMap[biz][brand].y26 += sales; 
+                    if (!brand || brand === 'UNASSIGNED' || brand === 'UNDEFINED' || brand === '0' || brand === '-') return;
+
+                    if(biz === 'PHG' || biz === 'CHG') {
+                        if(!bMap[biz][brand]) bMap[biz][brand] = {div, y26:0, y25:0, f25:0, mtd26:0, mtd25:0};
+                        if(is2025) {
+                            bMap[biz][brand].f25 += sales; 
+                            if(bln <= m) bMap[biz][brand].y25 += sales; 
+                            if(bln === m) bMap[biz][brand].mtd25 += sales; 
+                        } else {
+                            if(bln <= m) bMap[biz][brand].y26 += sales; 
+                            if(bln === m) bMap[biz][brand].mtd26 += sales; 
+                        }
                     }
-                }
-            };
+                };
 
-            sales2025.forEach(r => processPareto(r, true));
-            sales2026.forEach(r => processPareto(r, false));
+                sales2025.forEach(r => processPareto(r, true));
+                sales2026.forEach(r => processPareto(r, false));
 
-            const buildParetoBrand = (bz) => {
-                return Object.keys(bMap[bz]).map(k => {
-                    let d = bMap[bz][k];
-                    let avgYtd26 = d.y26 / m; 
-                    let avg25 = d.f25 / 12; 
-                    let avgYtd25 = d.y25 / m; 
-                    return {
-                        brand: k, div: d.div, y26: d.y26, avgYtd26, f25: d.f25, avg25, y25: d.y25, avgYtd25,
-                        avgGrwt: calcGrowth(avgYtd26, avg25), ytdGrwt: calcGrowth(d.y26, d.y25)
-                    };
-                }).sort((a,b) => b.y26 - a.y26).slice(0, 10);
-            };
-            
-            const paretoCHG = buildParetoBrand('CHG'); 
-            const paretoPHG = buildParetoBrand('PHG');
+                const buildParetoBrand = (bz) => {
+                    return Object.keys(bMap[bz]).map(k => {
+                        let d = bMap[bz][k];
+                        let avgYtd26 = d.y26 / m; 
+                        let avg25 = d.f25 / 12; 
+                        let avgYtd25 = d.y25 / m; 
+                        return {
+                            brand: k, div: d.div, 
+                            y26: d.y26, avgYtd26, f25: d.f25, avg25, y25: d.y25, avgYtd25, mtd26: d.mtd26, mtd25: d.mtd25,
+                            avgGrwt: calcGrowth(avgYtd26, avg25), 
+                            ytdGrwt: calcGrowth(d.y26, d.y25),
+                            mtdGrwt: calcGrowth(d.mtd26, d.mtd25)
+                        };
+                    }).sort((a,b) => viewMode === 'MTD' ? (b.mtd26 - a.mtd26) : (b.y26 - a.y26)).slice(0, 10);
+                };
+
+                return {
+                    chg: buildParetoBrand('CHG'),
+                    phg: buildParetoBrand('PHG'),
+                    mName
+                };
+            }, [apiData, month, selectedDist, viewMode]);
+
+            if (!apiData || !paretoData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
-                    
+                    <div className="bg-slate-50 p-4 border border-gray-300 rounded-lg flex flex-wrap gap-4 items-center no-print">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-700 uppercase">Distributor:</span>
+                            <select value={selectedDist} onChange={(e) => setSelectedDist(e.target.value)} className="border-2 border-blue-400 rounded p-1 text-xs font-bold bg-white">
+                                <option value="ALL">ALL DISTRIBUTOR</option>
+                                <option value="APL">APL</option>
+                                <option value="KFT">KFT & OTHERS</option>
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-700 uppercase">View Mode:</span>
+                            <div className="flex bg-gray-200 rounded p-1">
+                                <button onClick={() => setViewMode('MTD')} className={`px-3 py-1 font-bold rounded text-xs ${viewMode==='MTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>MTD</button>
+                                <button onClick={() => setViewMode('YTD')} className={`px-3 py-1 font-bold rounded text-xs ${viewMode==='YTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>YTD</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="bg-white p-3 border shadow-md w-full overflow-x-auto">
-                        <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND BY BUSINESS TYPE YTD {mName} 2026 (CHG)</h2></div>
+                        <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND (CHG) - {viewMode} {paretoData.mName} 2026</h2></div>
                         <table className="excel-table w-full">
                             <thead>
                                 <tr>
                                     <th>Business</th><th className="text-left">Division</th><th className="text-left">Brand</th>
-                                    <th>Sum of FY 2025</th><th>Avg 2025</th>
-                                    <th>Sum of YTD 2025</th><th>Avg YTD 2025</th>
-                                    <th>Sum of YTD 2026</th><th>Avg YTD 2026</th>
-                                    <th>Avg Growth</th><th>YTD Growth</th>
+                                    {viewMode === 'YTD' ? (
+                                        <>
+                                            <th>Sum of FY 2025</th><th>Avg 2025</th>
+                                            <th>Sum of YTD 2025</th><th>Avg YTD 2025</th>
+                                            <th>Sum of YTD 2026</th><th>Avg YTD 2026</th>
+                                            <th>Avg Growth</th><th>YTD Growth</th>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <th>Sales MTD 2025</th><th>Sales MTD 2026</th><th>MTD Growth</th>
+                                        </>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody>
-                                {paretoCHG.map((r, i) => (
+                                {paretoData.chg.map((r, i) => (
                                     <tr key={'pchg'+i} className="hover:bg-gray-50">
                                         <td className="text-center bg-gray-100 font-bold text-gray-700">CHG</td>
                                         <td className="text-left text-gray-600">{r.div}</td>
                                         <td className="text-left font-black text-gray-800">{r.brand}</td>
-                                        <td className="text-right">{formatCurr(r.f25)}</td>
-                                        <td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td>
-                                        <td className="text-right">{formatCurr(r.y25)}</td>
-                                        <td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td>
-                                        <td className="text-right font-black text-blue-700">{formatCurr(r.y26)}</td>
-                                        <td className="text-right bg-blue-50 font-bold">{formatCurr(r.avgYtd26)}</td>
-                                        <td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td>
-                                        <td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td>
+                                        {viewMode === 'YTD' ? (
+                                            <>
+                                                <td className="text-right">{formatCurr(r.f25)}</td>
+                                                <td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td>
+                                                <td className="text-right">{formatCurr(r.y25)}</td>
+                                                <td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td>
+                                                <td className="text-right font-black text-blue-700">{formatCurr(r.y26)}</td>
+                                                <td className="text-right bg-blue-50 font-bold">{formatCurr(r.avgYtd26)}</td>
+                                                <td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td>
+                                                <td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <td className="text-right text-gray-500">{formatCurr(r.mtd25)}</td>
+                                                <td className="text-right font-black text-blue-700">{formatCurr(r.mtd26)}</td>
+                                                <td className={`text-center font-bold ${cGrw(r.mtdGrwt)}`}>{fGrw(r.mtdGrwt)}</td>
+                                            </>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -1102,31 +1679,49 @@
                     </div>
 
                     <div className="bg-white p-3 border shadow-md w-full overflow-x-auto mt-6">
-                        <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND BY BUSINESS TYPE YTD {mName} 2026 (PHG)</h2></div>
+                        <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND (PHG) - {viewMode} {paretoData.mName} 2026</h2></div>
                         <table className="excel-table w-full">
                             <thead>
                                 <tr>
                                     <th>Business</th><th className="text-left">Division</th><th className="text-left">Brand</th>
-                                    <th>Sum of FY 2025</th><th>Avg 2025</th>
-                                    <th>Sum of YTD 2025</th><th>Avg YTD 2025</th>
-                                    <th>Sum of YTD 2026</th><th>Avg YTD 2026</th>
-                                    <th>Avg Growth</th><th>YTD Growth</th>
+                                    {viewMode === 'YTD' ? (
+                                        <>
+                                            <th>Sum of FY 2025</th><th>Avg 2025</th>
+                                            <th>Sum of YTD 2025</th><th>Avg YTD 2025</th>
+                                            <th>Sum of YTD 2026</th><th>Avg YTD 2026</th>
+                                            <th>Avg Growth</th><th>YTD Growth</th>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <th>Sales MTD 2025</th><th>Sales MTD 2026</th><th>MTD Growth</th>
+                                        </>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody>
-                                {paretoPHG.map((r, i) => (
+                                {paretoData.phg.map((r, i) => (
                                     <tr key={'pphg'+i} className="hover:bg-gray-50">
                                         <td className="text-center bg-gray-100 font-bold text-gray-700">PHG</td>
                                         <td className="text-left text-gray-600">{r.div}</td>
                                         <td className="text-left font-black text-gray-800">{r.brand}</td>
-                                        <td className="text-right">{formatCurr(r.f25)}</td>
-                                        <td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td>
-                                        <td className="text-right">{formatCurr(r.y25)}</td>
-                                        <td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td>
-                                        <td className="text-right font-black text-blue-700">{formatCurr(r.y26)}</td>
-                                        <td className="text-right bg-blue-50 font-bold">{formatCurr(r.avgYtd26)}</td>
-                                        <td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td>
-                                        <td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td>
+                                        {viewMode === 'YTD' ? (
+                                            <>
+                                                <td className="text-right">{formatCurr(r.f25)}</td>
+                                                <td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td>
+                                                <td className="text-right">{formatCurr(r.y25)}</td>
+                                                <td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td>
+                                                <td className="text-right font-black text-blue-700">{formatCurr(r.y26)}</td>
+                                                <td className="text-right bg-blue-50 font-bold">{formatCurr(r.avgYtd26)}</td>
+                                                <td className={`text-center ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td>
+                                                <td className={`text-center ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <td className="text-right text-gray-500">{formatCurr(r.mtd25)}</td>
+                                                <td className="text-right font-black text-blue-700">{formatCurr(r.mtd26)}</td>
+                                                <td className={`text-center font-bold ${cGrw(r.mtdGrwt)}`}>{fGrw(r.mtdGrwt)}</td>
+                                            </>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -1141,65 +1736,70 @@
         // MENU 4: BIG CITY PARETO
         // ==========================================
         const CityView = ({ apiData, month }) => {
-            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+            const cMapData = useMemo(() => {
+                if (!apiData) return null;
+                const sales2026 = apiData.sales2026 || [];
+                const sales2025 = apiData.sales2025 || [];
 
-            const sales2026 = apiData.sales2026 || [];
-            const sales2025 = apiData.sales2025 || [];
+                const m = parseInt(month) || 1;
 
-            const m = parseInt(month) || 1;
+                const kSales = ['sales', 'value', 'amount', 'total'];
+                const kBulan = ['bulan', 'month'];
+                const kCity = ['city', 'kota', 'kabupaten', 'area']; 
+                const kCustCode = ['customer code', 'cust code', 'kode pelanggan'];
 
-            const kSales = ['sales', 'value', 'amount', 'total'];
-            const kBulan = ['bulan', 'month'];
-            const kCity = ['city', 'kota', 'kabupaten', 'area']; 
-            const kCustCode = ['customer code', 'cust code', 'kode pelanggan'];
+                let cMap = {}; 
 
-            let cMap = {}; 
+                const processCity = (r, is2025) => {
+                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                    let city = String(getVal(r, kCity) || '').toUpperCase();
+                    let sales = parseNum(getVal(r, kSales));
+                    let cust = getVal(r, kCustCode);
 
-            const processCity = (r, is2025) => {
-                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                let city = String(getVal(r, kCity) || '').toUpperCase();
-                let sales = parseNum(getVal(r, kSales));
-                let cust = getVal(r, kCustCode);
+                    if(city && city !== 'UNDEFINED' && city !== '') {
+                        if(!cMap[city]) cMap[city] = { y26:0, y25:0, f25:0, reach: new Set() };
+                        if(cust && sales > 0) cMap[city].reach.add(cust); 
 
-                if(city && city !== 'UNDEFINED' && city !== '') {
-                    if(!cMap[city]) cMap[city] = { y26:0, y25:0, f25:0, reach: new Set() };
-                    if(cust && sales > 0) cMap[city].reach.add(cust); 
-
-                    if(is2025) {
-                        cMap[city].f25 += sales;
-                        if(bln <= m) cMap[city].y25 += sales;
-                    } else {
-                        if(bln <= m) cMap[city].y26 += sales;
+                        if(is2025) {
+                            cMap[city].f25 += sales;
+                            if(bln <= m) cMap[city].y25 += sales;
+                        } else {
+                            if(bln <= m) cMap[city].y26 += sales;
+                        }
                     }
-                }
-            };
-
-            sales2025.forEach(r => processCity(r, true));
-            sales2026.forEach(r => processCity(r, false));
-
-            let totalCityY26 = 0;
-            let cityArr = Object.keys(cMap).map(k => {
-                let d = cMap[k];
-                totalCityY26 += d.y26;
-                return {
-                    city: k, y26: d.y26, avg25: d.f25/12, 
-                    avgGrwt: calcGrowth(d.y26/m, d.f25/12), ytdGrwt: calcGrowth(d.y26, d.y25),
-                    reach: d.reach.size
                 };
-            }).sort((a,b) => b.y26 - a.y26).slice(0, 7); 
 
-            let top7Share = totalCityY26 > 0 ? Math.round((cityArr.reduce((a,c)=>a+c.y26, 0) / totalCityY26) * 100) : 0;
-            let totalAvg25All = Object.keys(cMap).reduce((a,c)=>a+cMap[c].f25,0)/12;
+                sales2025.forEach(r => processCity(r, true));
+                sales2026.forEach(r => processCity(r, false));
+
+                let totalCityY26 = 0;
+                let cityArr = Object.keys(cMap).map(k => {
+                    let d = cMap[k];
+                    totalCityY26 += d.y26;
+                    return {
+                        city: k, y26: d.y26, avg25: d.f25/12, 
+                        avgGrwt: calcGrowth(d.y26/m, d.f25/12), ytdGrwt: calcGrowth(d.y26, d.y25),
+                        reach: d.reach.size
+                    };
+                }).sort((a,b) => b.y26 - a.y26).slice(0, 7); 
+
+                let top7Share = totalCityY26 > 0 ? Math.round((cityArr.reduce((a,c)=>a+c.y26, 0) / totalCityY26) * 100) : 0;
+                let totalAvg25All = Object.keys(cMap).reduce((a,c)=>a+cMap[c].f25,0)/12;
+                
+                return { cityArr, top7Share, totalAvg25All, totalCityY26 };
+            }, [apiData, month]);
+
+            if (!apiData || !cMapData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
                     <div className="bg-white p-4 border shadow-md w-full">
                         <div className="text-center mb-6"><h2 className="header-title !text-xl !px-20">Big Pareto City/Kabupaten in Papua</h2></div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-                            {cityArr.length === 0 ? <p className="text-center col-span-4 py-4">Data kota tidak ditemukan.</p> : null}
+                            {cMapData.cityArr.length === 0 ? <p className="text-center col-span-4 py-4">Data kota tidak ditemukan.</p> : null}
                             
-                            {cityArr.map((r, i) => {
-                                let share = totalCityY26 > 0 ? Math.round((r.y26/totalCityY26)*100) : 0;
+                            {cMapData.cityArr.map((r, i) => {
+                                let share = cMapData.totalCityY26 > 0 ? Math.round((r.y26/cMapData.totalCityY26)*100) : 0;
                                 return (
                                     <div key={i} className="city-card">
                                         <div className="city-logo">🌆</div>
@@ -1218,10 +1818,10 @@
                             <div className="city-card !border-blue-600 !bg-blue-50 !flex-col !justify-center !text-center">
                                 <h3 className="text-lg font-black text-blue-900 mb-2">SUMMARY</h3>
                                 <p className="text-sm font-semibold text-gray-800">
-                                    7 Kabupaten/Kota from {Object.keys(cMap).length},<br/>
-                                    Contribute <span className="text-blue-600 font-black text-lg">{top7Share}%</span> share<br/>
+                                    7 Kabupaten/Kota,<br/>
+                                    Contribute <span className="text-blue-600 font-black text-lg">{cMapData.top7Share}%</span> share<br/>
                                     business contribution with<br/>
-                                    Avg/month Rp {formatCurr(totalAvg25All)} in 2026
+                                    Avg/month Rp {formatCurr(cMapData.totalAvg25All)} in 2026
                                 </p>
                             </div>
                         </div>
@@ -1250,87 +1850,96 @@
         // MENU 5: BUYING OUTLETS ANALYSIS
         // ==========================================
         const OutletAnalysisView = ({ apiData, month }) => {
-            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
-
-            const sales2026 = apiData.sales2026 || [];
-            const sales2025 = apiData.sales2025 || [];
-
-            const m = parseInt(month) || 1;
-            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            const mName = mNames[m-1];
-            
             const [viewMode, setViewMode] = useState('MTD'); 
             
-            const kSales = ['sales', 'value', 'amount'];
-            const kBulan = ['bulan', 'month'];
-            const kCustCode = ['customer code', 'kode pelanggan'];
-            const kCustName = ['customer name', 'nama pelanggan'];
-            const kDist = ['distributor', 'dist']; 
-            
-            let chartData = Array.from({length:12}, (_,i)=>({ name:mNames[i], cust26: new Set(), cust25: new Set(), MTD:0, LY_MTD:0 }));
-            
-            let out25_MTD = new Map(); let out26_MTD = new Set();
-            let out25_YTD = new Map(); let out26_YTD = new Set();
+            const oaData = useMemo(() => {
+                if (!apiData) return null;
+                const sales2026 = apiData.sales2026 || [];
+                const sales2025 = apiData.sales2025 || [];
 
-            sales2025.forEach(r => {
-                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                let sales = parseNum(getVal(r, kSales));
-                let cCode = getVal(r, kCustCode);
-                let cName = getVal(r, kCustName) || cCode;
-                let cDist = String(getVal(r, kDist) || 'OTHERS').toUpperCase();
+                const m = parseInt(month) || 1;
+                const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const mName = mNames[m-1];
                 
-                if(cCode && sales > 0) {
-                    chartData[bln-1].cust25.add(cCode);
-                    if(bln === m) {
-                        if(!out25_MTD.has(cCode)) out25_MTD.set(cCode, {name: cName, dist: cDist, sales: 0});
-                        out25_MTD.get(cCode).sales += sales;
-                    }
-                    if(bln <= m) {
-                        if(!out25_YTD.has(cCode)) out25_YTD.set(cCode, {name: cName, dist: cDist, sales: 0});
-                        out25_YTD.get(cCode).sales += sales;
-                    }
-                }
-            });
-
-            sales2026.forEach(r => {
-                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                let sales = parseNum(getVal(r, kSales));
-                let cCode = getVal(r, kCustCode);
+                const kSales = ['sales', 'value', 'amount'];
+                const kBulan = ['bulan', 'month'];
+                const kCustCode = ['customer code', 'kode pelanggan'];
+                const kCustName = ['customer name', 'nama pelanggan'];
+                const kDist = ['distributor', 'dist']; 
                 
-                if(cCode && sales > 0) {
-                    chartData[bln-1].cust26.add(cCode);
-                    if(bln === m) out26_MTD.add(cCode);
-                    if(bln <= m) out26_YTD.add(cCode);
-                }
-            });
-            
-            chartData.forEach(d => { d.MTD = d.cust26.size; d.LY_MTD = d.cust25.size; });
-            const currentMtdVal = chartData[m-1] ? chartData[m-1].MTD : 0;
-            const lyMtdVal = chartData[m-1] ? chartData[m-1].LY_MTD : 0;
-            const variance = currentMtdVal - lyMtdVal;
+                let chartData = Array.from({length:12}, (_,i)=>({ name:mNames[i], cust26: new Set(), cust25: new Set(), MTD:0, LY_MTD:0 }));
+                
+                let out25_MTD = new Map(); let out26_MTD = new Set();
+                let out25_YTD = new Map(); let out26_YTD = new Set();
 
-            let lossAPL = []; let totalAPL = 0;
-            let lossKFT = []; let totalKFT = 0;
-            
-            const processLossList = (map25, set26) => {
-                for (let [code, data] of map25.entries()) {
-                    if (!set26.has(code)) { 
-                        if(data.dist.includes('APL') || data.dist.includes('ANUGERAH')) {
-                            lossAPL.push({code, name: data.name, lostSales: data.sales});
-                            totalAPL += data.sales;
-                        } else {
-                            lossKFT.push({code, name: data.name, lostSales: data.sales});
-                            totalKFT += data.sales;
+                sales2025.forEach(r => {
+                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                    let sales = parseNum(getVal(r, kSales));
+                    let cCode = getVal(r, kCustCode);
+                    let cName = getVal(r, kCustName) || cCode;
+                    let cDist = String(getVal(r, kDist) || 'OTHERS').toUpperCase();
+                    
+                    if(cCode && sales > 0) {
+                        chartData[bln-1].cust25.add(cCode);
+                        if(bln === m) {
+                            if(!out25_MTD.has(cCode)) out25_MTD.set(cCode, {name: cName, dist: cDist, sales: 0});
+                            out25_MTD.get(cCode).sales += sales;
+                        }
+                        if(bln <= m) {
+                            if(!out25_YTD.has(cCode)) out25_YTD.set(cCode, {name: cName, dist: cDist, sales: 0});
+                            out25_YTD.get(cCode).sales += sales;
                         }
                     }
-                }
-            };
+                });
 
-            if(viewMode === 'MTD') processLossList(out25_MTD, out26_MTD);
-            else processLossList(out25_YTD, out26_YTD);
-            
-            lossAPL.sort((a,b) => b.lostSales - a.lostSales);
-            lossKFT.sort((a,b) => b.lostSales - a.lostSales);
+                sales2026.forEach(r => {
+                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                    let sales = parseNum(getVal(r, kSales));
+                    let cCode = getVal(r, kCustCode);
+                    
+                    if(cCode && sales > 0) {
+                        chartData[bln-1].cust26.add(cCode);
+                        if(bln === m) out26_MTD.add(cCode);
+                        if(bln <= m) out26_YTD.add(cCode);
+                    }
+                });
+                
+                chartData.forEach(d => { d.MTD = d.cust26.size; d.LY_MTD = d.cust25.size; });
+                const currentMtdVal = chartData[m-1] ? chartData[m-1].MTD : 0;
+                const lyMtdVal = chartData[m-1] ? chartData[m-1].LY_MTD : 0;
+                const variance = currentMtdVal - lyMtdVal;
+
+                return { out25_MTD, out26_MTD, out25_YTD, out26_YTD, chartData, currentMtdVal, variance, mName };
+            }, [apiData, month]);
+
+            const lossData = useMemo(() => {
+                if(!oaData) return null;
+                let lossAPL = []; let totalAPL = 0;
+                let lossKFT = []; let totalKFT = 0;
+                
+                const processLossList = (map25, set26) => {
+                    for (let [code, data] of map25.entries()) {
+                        if (!set26.has(code)) { 
+                            if(data.dist.includes('APL') || data.dist.includes('ANUGERAH')) {
+                                lossAPL.push({code, name: data.name, lostSales: data.sales});
+                                totalAPL += data.sales;
+                            } else {
+                                lossKFT.push({code, name: data.name, lostSales: data.sales});
+                                totalKFT += data.sales;
+                            }
+                        }
+                    }
+                };
+
+                if(viewMode === 'MTD') processLossList(oaData.out25_MTD, oaData.out26_MTD);
+                else processLossList(oaData.out25_YTD, oaData.out26_YTD);
+                
+                lossAPL.sort((a,b) => b.lostSales - a.lostSales);
+                lossKFT.sort((a,b) => b.lostSales - a.lostSales);
+                return { lossAPL, totalAPL, lossKFT, totalKFT };
+            }, [oaData, viewMode]);
+
+            if (!apiData || !oaData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
@@ -1339,20 +1948,20 @@
                         <div className="flex flex-col md:flex-row gap-4 mt-2 w-full">
                             <div className="w-full md:w-1/3 flex flex-col gap-3">
                                 <div className="border border-gray-300 p-4 text-center shadow-sm">
-                                    <h3 className="text-4xl font-light text-gray-800 mb-1">{currentMtdVal}</h3>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">No. Of Buying Outlets ({mName} 2026)</p>
+                                    <h3 className="text-4xl font-light text-gray-800 mb-1">{oaData.currentMtdVal}</h3>
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">No. Of Buying Outlets ({oaData.mName} 2026)</p>
                                 </div>
                                 <div className="border border-gray-300 p-3 flex items-center justify-center gap-4 shadow-sm bg-gray-50">
-                                    <span className={`text-3xl ${variance < 0 ? 'text-red-alert' : 'text-green-good'}`}>{variance < 0 ? '▼' : '▲'}</span>
+                                    <span className={`text-3xl ${oaData.variance < 0 ? 'text-red-alert' : 'text-green-good'}`}>{oaData.variance < 0 ? '▼' : '▲'}</span>
                                     <div>
-                                        <h3 className={`text-2xl font-black ${variance < 0 ? 'text-red-alert' : 'text-green-good'}`}>{Math.abs(variance)}</h3>
-                                        <p className="text-[10px] text-gray-500 font-bold">vs Last Year ({mName} 2025)</p>
+                                        <h3 className={`text-2xl font-black ${oaData.variance < 0 ? 'text-red-alert' : 'text-green-good'}`}>{Math.abs(oaData.variance)}</h3>
+                                        <p className="text-[10px] text-gray-500 font-bold">vs Last Year ({oaData.mName} 2025)</p>
                                     </div>
                                 </div>
                             </div>
                             <div className="w-full md:w-2/3 min-h-[250px] border border-gray-300 p-2 shadow-sm">
                                 <ResponsiveContainer width="100%" height={230}>
-                                    <LineChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
+                                    <LineChart data={oaData.chartData} margin={{ top: 20, right: 20, left: -10, bottom: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis dataKey="name" tick={{fontSize: 10}} />
                                         <YAxis tick={{fontSize: 10}} />
@@ -1370,41 +1979,41 @@
                         <div className="flex flex-wrap justify-between items-center mb-3 border-b pb-2 gap-2">
                             <h2 className="header-title !mb-0">Lost Sales Analysis (Pemisahan Distributor)</h2>
                             <div className="flex bg-gray-200 rounded p-1 no-print">
-                                <button onClick={() => setViewMode('MTD')} className={`px-4 py-1 font-bold rounded text-xs ${viewMode==='MTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>View MTD ({mName})</button>
+                                <button onClick={() => setViewMode('MTD')} className={`px-4 py-1 font-bold rounded text-xs ${viewMode==='MTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>View MTD ({oaData.mName})</button>
                                 <button onClick={() => setViewMode('YTD')} className={`px-4 py-1 font-bold rounded text-xs ${viewMode==='YTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>View YTD</button>
                             </div>
                         </div>
                         
                         <div className="bg-red-50 border border-red-200 p-2 mb-3 text-center rounded">
                             <p className="text-xs text-red-800">Total Potensi Loss Keseluruhan <b>{viewMode}</b>:</p>
-                            <p className="text-2xl font-black text-red-600">Rp {formatCurr(totalAPL + totalKFT)}</p>
+                            <p className="text-2xl font-black text-red-600">Rp {formatCurr(lossData.totalAPL + lossData.totalKFT)}</p>
                             <p className="text-[10px] text-red-700 mt-1">
-                                {viewMode === 'MTD' ? `Daftar outlet yang di bulan ${mName} 2025 transaksi, tapi di bulan ${mName} 2026 BELUM transaksi.` : `Daftar outlet yang dari Jan-${mName} 2025 transaksi, tapi dari Jan-${mName} 2026 BELUM transaksi sama sekali.`}
+                                {viewMode === 'MTD' ? `Daftar outlet yang di bulan ${oaData.mName} 2025 transaksi, tapi di bulan ${oaData.mName} 2026 BELUM transaksi.` : `Daftar outlet yang dari Jan-${oaData.mName} 2025 transaksi, tapi dari Jan-${oaData.mName} 2026 BELUM transaksi sama sekali.`}
                             </p>
                         </div>
                         
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start w-full">
                             <div className="border border-gray-300 w-full">
-                                <div className="bg-blue-100 p-2 text-center border-b border-gray-300 font-bold text-blue-900 text-xs">Distributor: APL<br/><span className="text-red-600">Loss: Rp {formatCurr(totalAPL)}</span></div>
+                                <div className="bg-blue-100 p-2 text-center border-b border-gray-300 font-bold text-blue-900 text-xs">Distributor: APL<br/><span className="text-red-600">Loss: Rp {formatCurr(lossData.totalAPL)}</span></div>
                                 <div className="w-full">
                                     <table className="excel-table w-full border-0">
                                         <thead className="sticky top-0 shadow"><tr><th>Cust Code</th><th className="text-left">Customer Name</th><th className="text-right">Lost Sales (Rp)</th></tr></thead>
                                         <tbody>
-                                            {lossAPL.length === 0 ? <tr><td colSpan="3" className="text-center py-4">Semua pelanggan APL aman bertransaksi!</td></tr> : null}
-                                            {lossAPL.map((r, i) => <tr key={i}><td className="text-center text-[10px]">{r.code}</td><td className="text-left font-semibold text-[10px]">{r.name}</td><td className="text-right font-black text-red-600 text-[10px]">{formatCurr(r.lostSales)}</td></tr>)}
+                                            {lossData.lossAPL.length === 0 ? <tr><td colSpan="3" className="text-center py-4">Semua pelanggan APL aman bertransaksi!</td></tr> : null}
+                                            {lossData.lossAPL.map((r, i) => <tr key={i}><td className="text-center text-[10px]">{r.code}</td><td className="text-left font-semibold text-[10px]">{r.name}</td><td className="text-right font-black text-red-600 text-[10px]">{formatCurr(r.lostSales)}</td></tr>)}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
 
                             <div className="border border-gray-300 w-full">
-                                <div className="bg-blue-100 p-2 text-center border-b border-gray-300 font-bold text-blue-900 text-xs">Distributor: KFT & Others<br/><span className="text-red-600">Loss: Rp {formatCurr(totalKFT)}</span></div>
+                                <div className="bg-blue-100 p-2 text-center border-b border-gray-300 font-bold text-blue-900 text-xs">Distributor: KFT & Others<br/><span className="text-red-600">Loss: Rp {formatCurr(lossData.totalKFT)}</span></div>
                                 <div className="w-full">
                                     <table className="excel-table w-full border-0">
                                         <thead className="sticky top-0 shadow"><tr><th>Cust Code</th><th className="text-left">Customer Name</th><th className="text-right">Lost Sales (Rp)</th></tr></thead>
                                         <tbody>
-                                            {lossKFT.length === 0 ? <tr><td colSpan="3" className="text-center py-4">Semua pelanggan KFT aman bertransaksi!</td></tr> : null}
-                                            {lossKFT.map((r, i) => <tr key={i}><td className="text-center text-[10px]">{r.code}</td><td className="text-left font-semibold text-[10px]">{r.name}</td><td className="text-right font-black text-red-600 text-[10px]">{formatCurr(r.lostSales)}</td></tr>)}
+                                            {lossData.lossKFT.length === 0 ? <tr><td colSpan="3" className="text-center py-4">Semua pelanggan KFT aman bertransaksi!</td></tr> : null}
+                                            {lossData.lossKFT.map((r, i) => <tr key={i}><td className="text-center text-[10px]">{r.code}</td><td className="text-left font-semibold text-[10px]">{r.name}</td><td className="text-right font-black text-red-600 text-[10px]">{formatCurr(r.lostSales)}</td></tr>)}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1418,108 +2027,146 @@
         // ==========================================
         // MENU 6: NPD MONITORING 
         // ==========================================
-        const NPDView = ({ apiData }) => {
-            if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+        const NPDView = ({ apiData, month }) => {
+            const [selectedDist, setSelectedDist] = useState('ALL');
+            const [viewMode, setViewMode] = useState('YTD'); 
+            const [localMonth, setLocalMonth] = useState(month);
 
-            const sales2026 = apiData.sales2026 || [];
-            const sales2025 = apiData.sales2025 || [];
+            useEffect(() => { setLocalMonth(month); }, [month]);
 
-            const kName = ['product name', 'nama produk'];
-            const kBulan = ['bulan', 'month'];
-            const kSales = ['sales', 'value', 'amount'];
-            const kCust = ['customer code', 'cust code'];
-            
-            const npdList = [ "ENERVON FIZZ @8 TAB", "ENERVON KIDS @21 TAB", "NATUR-E ADVANCED INT UL SUN PROTECT 40ML", "NATUR-E COLLA BITES", "NATUR-E COLLAFIBE", "NATUR-E WHITE RAD UL SUN PROTECTION 40ML", "PARATUSIN DMP TABLET", "PARATUSIN PSE DMP SYRUP", "VICEE FUN BERRIES GUMMY (DV)", "VICEE FUN TROPICAL TANGO GUMMY (DV)" ];
-            
-            let npdMap = {}; 
-            npdList.forEach(name => { 
-                npdMap[name.toUpperCase()] = { 
-                    s25: {}, s26: {}, 
-                    cust25: {}, cust26: {},
-                    globalCust25: new Set(), globalCust26: new Set()
-                }; 
-            });
-            
-            const processNPD = (dataRow, is2025) => {
-                let name = String(getVal(dataRow, kName) || '').trim().toUpperCase();
-                let matchedNPD = Object.keys(npdMap).find(k => name.includes(k) || k.includes(name));
+            const npdData = useMemo(() => {
+                if (!apiData) return null;
+                const sales2026 = apiData.sales2026 || [];
+                const sales2025 = apiData.sales2025 || [];
+
+                const m = parseInt(localMonth) || 1;
+                const kName = ['product name', 'nama produk'];
+                const kBulan = ['bulan', 'month'];
+                const kSales = ['sales', 'value', 'amount'];
+                const kCust = ['customer code', 'cust code'];
+                const kDist = ['distributor', 'dist', 'principal'];
                 
-                if(matchedNPD) {
-                    let bln = parseInt(getVal(dataRow, kBulan));
-                    let sales = parseNum(getVal(dataRow, kSales));
-                    let cust = getVal(dataRow, kCust);
+                const npdList = [ "ENERVON FIZZ @8 TAB", "ENERVON KIDS @21 TAB", "NATUR-E ADVANCED INT UL SUN PROTECT 40ML", "NATUR-E COLLA BITES", "NATUR-E COLLAFIBE", "NATUR-E WHITE RAD UL SUN PROTECTION 40ML", "PARATUSIN DMP TABLET", "PARATUSIN PSE DMP SYRUP", "VICEE FUN BERRIES GUMMY (DV)", "VICEE FUN TROPICAL TANGO GUMMY (DV)" ];
+                
+                let npdMap = {}; 
+                npdList.forEach(name => { 
+                    npdMap[name.toUpperCase()] = { 
+                        s25: {}, s26: {}, cust25: {}, cust26: {}, globalCust25: new Set(), globalCust26: new Set()
+                    }; 
+                });
+                
+                const processNPD = (dataRow, is2025) => {
+                    let dist = String(getVal(dataRow, kDist) || 'APL').toUpperCase();
+                    let matchDist = true;
+                    if(selectedDist === 'APL' && !dist.includes('APL') && !dist.includes('ANUGERAH')) matchDist = false;
+                    if(selectedDist === 'KFT' && (dist.includes('APL') || dist.includes('ANUGERAH'))) matchDist = false;
+                    if (!matchDist) return;
+
+                    let name = String(getVal(dataRow, kName) || '').trim().toUpperCase();
+                    let matchedNPD = Object.keys(npdMap).find(k => name.includes(k) || k.includes(name));
                     
-                    if (bln >= 1 && bln <= 12) {
-                        if (is2025) {
-                            npdMap[matchedNPD].s25[bln] = (npdMap[matchedNPD].s25[bln] || 0) + sales;
-                            if (cust && sales > 0) {
-                                if(!npdMap[matchedNPD].cust25[bln]) npdMap[matchedNPD].cust25[bln] = new Set();
-                                npdMap[matchedNPD].cust25[bln].add(cust);
-                                npdMap[matchedNPD].globalCust25.add(cust);
-                            }
-                        } else {
-                            npdMap[matchedNPD].s26[bln] = (npdMap[matchedNPD].s26[bln] || 0) + sales;
-                            if (cust && sales > 0) {
-                                if(!npdMap[matchedNPD].cust26[bln]) npdMap[matchedNPD].cust26[bln] = new Set();
-                                npdMap[matchedNPD].cust26[bln].add(cust);
-                                npdMap[matchedNPD].globalCust26.add(cust);
+                    if(matchedNPD) {
+                        let bln = parseInt(getVal(dataRow, kBulan));
+                        let sales = parseNum(getVal(dataRow, kSales));
+                        let cust = getVal(dataRow, kCust);
+                        
+                        if (bln >= 1 && bln <= 12) {
+                            if (is2025) {
+                                npdMap[matchedNPD].s25[bln] = (npdMap[matchedNPD].s25[bln] || 0) + sales;
+                                if (cust && sales > 0) {
+                                    if(!npdMap[matchedNPD].cust25[bln]) npdMap[matchedNPD].cust25[bln] = new Set();
+                                    npdMap[matchedNPD].cust25[bln].add(cust);
+                                    if (viewMode === 'YTD' ? (bln <= m) : (bln === m)) npdMap[matchedNPD].globalCust25.add(cust);
+                                }
+                            } else {
+                                npdMap[matchedNPD].s26[bln] = (npdMap[matchedNPD].s26[bln] || 0) + sales;
+                                if (cust && sales > 0) {
+                                    if(!npdMap[matchedNPD].cust26[bln]) npdMap[matchedNPD].cust26[bln] = new Set();
+                                    npdMap[matchedNPD].cust26[bln].add(cust);
+                                    if (viewMode === 'YTD' ? (bln <= m) : (bln === m)) npdMap[matchedNPD].globalCust26.add(cust);
+                                }
                             }
                         }
                     }
-                }
-            };
-            
-            sales2025.forEach(r => processNPD(r, true));
-            sales2026.forEach(r => processNPD(r, false));
-            
-            let npdArr = Object.keys(npdMap).map(k => {
-                let d = npdMap[k];
-                let t25 = [8,9,10,11,12].reduce((sum, m) => sum + (d.s25[m]||0), 0);
-                let t26 = [1,2,3,4,5,6,7,8,9,10,11,12].reduce((sum, m) => sum + (d.s26[m]||0), 0);
+                };
                 
-                let ao25_tot = d.globalCust25.size;
-                let ao26_tot = d.globalCust26.size;
+                sales2025.forEach(r => processNPD(r, true));
+                sales2026.forEach(r => processNPD(r, false));
                 
-                let grandCustSet = new Set([...d.globalCust25, ...d.globalCust26]);
-                let ao_grand = grandCustSet.size;
+                let npdArr = Object.keys(npdMap).map(k => {
+                    let d = npdMap[k];
+                    let t25 = 0; let t26 = 0;
+                    if (viewMode === 'MTD') {
+                        t25 = d.s25[m] || 0;
+                        t26 = d.s26[m] || 0;
+                    } else {
+                        t25 = [8,9,10,11,12].filter(mon => mon <= m || m >= 8).reduce((sum, mon) => sum + (d.s25[mon]||0), 0); 
+                        t26 = Array.from({length: m}, (_, i) => i + 1).reduce((sum, mon) => sum + (d.s26[mon]||0), 0);
+                    }
+                    
+                    let ao25_tot = d.globalCust25.size;
+                    let ao26_tot = d.globalCust26.size;
+                    let grandCustSet = new Set([...d.globalCust25, ...d.globalCust26]);
+                    let ao_grand = grandCustSet.size;
 
-                return { name: k, data: d, t25, t26, grand: t25+t26, ao25_tot, ao26_tot, ao_grand };
-            });
-
-            let totOmset = { s25: {}, s26: {}, t25: 0, t26: 0, grand: 0 };
-            let totAO = { s25: {}, s26: {}, t25: 0, t26: 0, grand: 0 };
-            
-            let sumGlobalAO25 = new Set();
-            let sumGlobalAO26 = new Set();
-
-            [8,9,10,11,12].forEach(m => { totOmset.s25[m]=0; totAO.s25[m]=0; });
-            [1,2,3,4,5,6,7,8,9,10,11,12].forEach(m => { totOmset.s26[m]=0; totAO.s26[m]=0; });
-
-            npdArr.forEach(r => {
-                [8,9,10,11,12].forEach(m => {
-                    totOmset.s25[m] += (r.data.s25[m] || 0);
-                    totAO.s25[m] += (r.data.cust25[m] ? r.data.cust25[m].size : 0);
+                    return { name: k, data: d, t25, t26, grand: t25+t26, ao25_tot, ao26_tot, ao_grand };
                 });
-                [1,2,3,4,5,6,7,8,9,10,11,12].forEach(m => {
-                    totOmset.s26[m] += (r.data.s26[m] || 0);
-                    totAO.s26[m] += (r.data.cust26[m] ? r.data.cust26[m].size : 0);
+
+                let totOmset = { s25: {}, s26: {}, t25: 0, t26: 0, grand: 0 };
+                let totAO = { s25: {}, s26: {}, t25: 0, t26: 0, grand: 0 };
+                let sumGlobalAO25 = new Set();
+                let sumGlobalAO26 = new Set();
+
+                [8,9,10,11,12].forEach(mon => { totOmset.s25[mon]=0; totAO.s25[mon]=0; });
+                [1,2,3,4,5,6,7,8,9,10,11,12].forEach(mon => { totOmset.s26[mon]=0; totAO.s26[mon]=0; });
+
+                npdArr.forEach(r => {
+                    [8,9,10,11,12].forEach(mon => {
+                        totOmset.s25[mon] += (r.data.s25[mon] || 0);
+                        totAO.s25[mon] += (r.data.cust25[mon] ? r.data.cust25[mon].size : 0);
+                    });
+                    [1,2,3,4,5,6,7,8,9,10,11,12].forEach(mon => {
+                        totOmset.s26[mon] += (r.data.s26[mon] || 0);
+                        totAO.s26[mon] += (r.data.cust26[mon] ? r.data.cust26[mon].size : 0);
+                    });
+                    totOmset.t25 += r.t25; totOmset.t26 += r.t26; totOmset.grand += r.grand;
+                    r.data.globalCust25.forEach(id => sumGlobalAO25.add(id));
+                    r.data.globalCust26.forEach(id => sumGlobalAO26.add(id));
                 });
-                
-                totOmset.t25 += r.t25; 
-                totOmset.t26 += r.t26; 
-                totOmset.grand += r.grand;
 
-                r.data.globalCust25.forEach(id => sumGlobalAO25.add(id));
-                r.data.globalCust26.forEach(id => sumGlobalAO26.add(id));
-            });
+                totAO.t25 = sumGlobalAO25.size;
+                totAO.t26 = sumGlobalAO26.size;
+                let sumGrandAOSet = new Set([...sumGlobalAO25, ...sumGlobalAO26]);
+                totAO.grand = sumGrandAOSet.size;
 
-            totAO.t25 = sumGlobalAO25.size;
-            totAO.t26 = sumGlobalAO26.size;
-            let sumGrandAOSet = new Set([...sumGlobalAO25, ...sumGlobalAO26]);
-            totAO.grand = sumGrandAOSet.size;
+                return { npdArr, totOmset, totAO };
+            }, [apiData, localMonth, selectedDist, viewMode]);
+
+            if (!apiData || !npdData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
                  <div className="space-y-8 animate-fade-in pb-12 w-full max-w-none">
+                    <div className="bg-slate-50 p-4 border border-gray-300 rounded-lg flex flex-wrap gap-4 items-center no-print">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-700 uppercase">Distributor:</span>
+                            <select value={selectedDist} onChange={(e) => setSelectedDist(e.target.value)} className="border-2 border-blue-400 rounded p-1 text-xs font-bold bg-white">
+                                <option value="ALL">ALL DISTRIBUTOR</option>
+                                <option value="APL">APL</option>
+                                <option value="KFT">KFT & OTHERS</option>
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-700 uppercase">Total Mode:</span>
+                            <div className="flex bg-gray-200 rounded p-1">
+                                <button onClick={() => setViewMode('MTD')} className={`px-3 py-1 font-bold rounded text-xs ${viewMode==='MTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>MTD</button>
+                                <button onClick={() => setViewMode('YTD')} className={`px-3 py-1 font-bold rounded text-xs ${viewMode==='YTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>YTD</button>
+                            </div>
+                        </div>
+                        <div className="text-[10px] text-gray-500 italic ml-4">
+                            *Mode Total akan memengaruhi perhitungan kolom Total 2025, Total 2026 & Grand Total berdasarkan Bulan yang dipilih.
+                        </div>
+                    </div>
+
                     <div className="bg-white p-4 border shadow-md w-full overflow-x-auto">
                         <div className="text-center mb-4"><h2 className="header-title">NPD MONITORING PERFORMANCE (OMSET)</h2></div>
                         <div className="w-full">
@@ -1528,9 +2175,9 @@
                                     <tr>
                                         <th rowSpan="2" className="text-left bg-white min-w-[200px]">Product Name</th>
                                         <th colSpan="5" className="bg-2025 text-center border-b-2 border-black">2025</th>
-                                        <th rowSpan="2" className="bg-2025 font-bold">2025 Total</th>
+                                        <th rowSpan="2" className="bg-2025 font-bold">2025 Total ({viewMode})</th>
                                         <th colSpan="12" className="bg-2026 text-center border-b-2 border-black">2026</th>
-                                        <th rowSpan="2" className="bg-2026 font-bold">2026 Total</th>
+                                        <th rowSpan="2" className="bg-2026 font-bold">2026 Total ({viewMode})</th>
                                         <th rowSpan="2" className="bg-grand">Grand Total</th>
                                     </tr>
                                     <tr>
@@ -1539,23 +2186,23 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {npdArr.map((r, i) => (
+                                    {npdData.npdArr.map((r, i) => (
                                         <tr key={i} className="hover:bg-gray-50">
                                             <td className="font-semibold">{r.name}</td>
-                                            {[8,9,10,11,12].map(m => <td key={'25'+m}>{r.data.s25[m] ? formatCurr(r.data.s25[m]) : ''}</td>)}
+                                            {[8,9,10,11,12].map(mon => <td key={'25'+mon}>{r.data.s25[mon] ? formatCurr(r.data.s25[mon]) : ''}</td>)}
                                             <td className="font-bold bg-yellow-50">{r.t25 > 0 ? formatCurr(r.t25) : ''}</td>
-                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={'26'+m}>{r.data.s26[m] ? formatCurr(r.data.s26[m]) : ''}</td>)}
+                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(mon => <td key={'26'+mon}>{r.data.s26[mon] ? formatCurr(r.data.s26[mon]) : ''}</td>)}
                                             <td className="font-bold bg-orange-50">{r.t26 > 0 ? formatCurr(r.t26) : ''}</td>
                                             <td className="bg-green-50 font-bold">{r.grand > 0 ? formatCurr(r.grand) : ''}</td>
                                         </tr>
                                     ))}
                                     <tr className="total-row bg-yellow-300">
                                         <td className="text-left font-black uppercase text-center">TOTAL SUMMARY</td>
-                                        {[8,9,10,11,12].map(m => <td key={'t25'+m}>{totOmset.s25[m] > 0 ? formatCurr(totOmset.s25[m]) : ''}</td>)}
-                                        <td className="font-black bg-yellow-400">{formatCurr(totOmset.t25)}</td>
-                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={'t26'+m}>{totOmset.s26[m] > 0 ? formatCurr(totOmset.s26[m]) : ''}</td>)}
-                                        <td className="font-black bg-orange-400">{formatCurr(totOmset.t26)}</td>
-                                        <td className="font-black bg-green-400">{formatCurr(totOmset.grand)}</td>
+                                        {[8,9,10,11,12].map(mon => <td key={'t25'+mon}>{npdData.totOmset.s25[mon] > 0 ? formatCurr(npdData.totOmset.s25[mon]) : ''}</td>)}
+                                        <td className="font-black bg-yellow-400">{formatCurr(npdData.totOmset.t25)}</td>
+                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(mon => <td key={'t26'+mon}>{npdData.totOmset.s26[mon] > 0 ? formatCurr(npdData.totOmset.s26[mon]) : ''}</td>)}
+                                        <td className="font-black bg-orange-400">{formatCurr(npdData.totOmset.t26)}</td>
+                                        <td className="font-black bg-green-400">{formatCurr(npdData.totOmset.grand)}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1570,10 +2217,10 @@
                                     <tr>
                                         <th rowSpan="2" className="text-left bg-white min-w-[200px]">Product Name</th>
                                         <th colSpan="5" className="bg-2025 text-center border-b-2 border-black">2025</th>
-                                        <th rowSpan="2" className="bg-2025 font-bold">2025 Total</th>
+                                        <th rowSpan="2" className="bg-2025 font-bold">2025 Total AO ({viewMode})</th>
                                         <th colSpan="12" className="bg-2026 text-center border-b-2 border-black">2026</th>
-                                        <th rowSpan="2" className="bg-2026 font-bold">2026 Total</th>
-                                        <th rowSpan="2" className="bg-grand">Grand Total</th>
+                                        <th rowSpan="2" className="bg-2026 font-bold">2026 Total AO ({viewMode})</th>
+                                        <th rowSpan="2" className="bg-grand">Grand Total AO</th>
                                     </tr>
                                     <tr>
                                         <th className="bg-2025">Aug</th><th className="bg-2025">Sep</th><th className="bg-2025">Oct</th><th className="bg-2025">Nov</th><th className="bg-2025">Dec</th>
@@ -1581,23 +2228,23 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {npdArr.map((r, i) => (
+                                    {npdData.npdArr.map((r, i) => (
                                         <tr key={i} className="hover:bg-gray-50">
                                             <td className="font-semibold">{r.name}</td>
-                                            {[8,9,10,11,12].map(m => <td key={'ao25'+m} className="text-center">{r.data.cust25[m] ? r.data.cust25[m].size : ''}</td>)}
+                                            {[8,9,10,11,12].map(mon => <td key={'ao25'+mon} className="text-center">{r.data.cust25[mon] ? r.data.cust25[mon].size : ''}</td>)}
                                             <td className="font-bold bg-yellow-50 text-center">{r.ao25_tot > 0 ? r.ao25_tot : ''}</td>
-                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={'ao26'+m} className="text-center">{r.data.cust26[m] ? r.data.cust26[m].size : ''}</td>)}
+                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(mon => <td key={'ao26'+mon} className="text-center">{r.data.cust26[mon] ? r.data.cust26[mon].size : ''}</td>)}
                                             <td className="font-bold bg-orange-50 text-center">{r.ao26_tot > 0 ? r.ao26_tot : ''}</td>
                                             <td className="bg-green-50 font-bold text-center text-green-700">{r.ao_grand > 0 ? r.ao_grand : ''}</td>
                                         </tr>
                                     ))}
                                     <tr className="total-row bg-yellow-300">
                                         <td className="text-left font-black uppercase text-center">TOTAL SUMMARY</td>
-                                        {[8,9,10,11,12].map(m => <td key={'aot25'+m} className="text-center">{totAO.s25[m] > 0 ? totAO.s25[m] : ''}</td>)}
-                                        <td className="font-black bg-yellow-400 text-center">{totAO.t25}</td>
-                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <td key={'aot26'+m} className="text-center">{totAO.s26[m] > 0 ? totAO.s26[m] : ''}</td>)}
-                                        <td className="font-black bg-orange-400 text-center">{totAO.t26}</td>
-                                        <td className="font-black bg-green-400 text-center text-green-900">{totAO.grand}</td>
+                                        {[8,9,10,11,12].map(mon => <td key={'aot25'+mon} className="text-center">{npdData.totAO.s25[mon] > 0 ? npdData.totAO.s25[mon] : ''}</td>)}
+                                        <td className="font-black bg-yellow-400 text-center">{npdData.totAO.t25}</td>
+                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(mon => <td key={'aot26'+mon} className="text-center">{npdData.totAO.s26[mon] > 0 ? npdData.totAO.s26[mon] : ''}</td>)}
+                                        <td className="font-black bg-orange-400 text-center">{npdData.totAO.t26}</td>
+                                        <td className="font-black bg-green-400 text-center text-green-900">{npdData.totAO.grand}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1608,20 +2255,21 @@
         };
 
         // ==========================================
-        // MENU 7: SALES FORECAST (HARDCODED APL & PRODUCT FILTER)
+        // MENU 7: SALES FORECAST (TARGET MTD & YTD)
         // ==========================================
         const ForecastView = ({ apiData, month }) => {
-            if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
-
-            const sales2026 = apiData.sales2026 || [];
-            const target2026 = apiData.target2026 || [];
-            const stock = apiData.stock || [];
-
-            const m = parseInt(month) || 1;
             const [statusFilter, setStatusFilter] = useState('ALL');
             const [searchProd, setSearchProd] = useState(''); 
-            
+
+            const m = parseInt(month) || 1;
+
             const tableData = useMemo(() => {
+                if (!apiData) return [];
+                
+                const sales2026 = apiData.sales2026 || [];
+                const target2026 = apiData.target2026 || [];
+                const stock = apiData.stock || [];
+
                 const kCode = ['item code', 'kode barang', 'material code'];
                 const kName = ['product name', 'nama produk'];
                 const kSales = ['sum of sales', 'sales', 'value', 'amount'];
@@ -1636,24 +2284,39 @@
                     let name = getVal(r, kName);
                     if (!name && !code) return; 
                     let dist = 'APL'; 
-                    let targetRp = 0;
+                    let targetMtd = 0; let targetYtd = 0; let targetFy = 0;
                     let blnRaw = getVal(r, ['bulan', 'month', 'bln']);
                     let bln = parseInt(blnRaw);
                     
                     if (blnRaw && !isNaN(bln)) {
-                         targetRp += parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                        let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                        targetFy += val;
+                        if (bln === m) targetMtd += val;
+                        if (bln <= m) targetYtd += val;
                     } else {
                          let foundMonthly = false;
-                         ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach(mon => {
+                         ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach((mon, idx) => {
                              let v = parseNum(getVal(r, [`quota ${mon}`, `target ${mon}`, `sum of quota ${mon}`]));
-                             if (v > 0) { targetRp += v; foundMonthly = true; }
+                             if (v > 0) { 
+                                 targetFy += v; 
+                                 if (idx + 1 === m) targetMtd += v;
+                                 if (idx + 1 <= m) targetYtd += v;
+                                 foundMonthly = true; 
+                             }
                          });
-                         if (!foundMonthly) targetRp += parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                         if (!foundMonthly) {
+                             let fallbackVal = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                             targetFy += fallbackVal;
+                             targetMtd += fallbackVal / 12;
+                             targetYtd += (fallbackVal / 12) * m;
+                         }
                     }
                     
                     let key = dist + '_' + (name || code);
-                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetRp:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
-                    itemData[key].targetRp += targetRp;
+                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
+                    itemData[key].targetMtd += targetMtd;
+                    itemData[key].targetYtd += targetYtd;
+                    itemData[key].targetFy += targetFy;
                 });
 
                 sales2026.forEach(r => {
@@ -1669,7 +2332,7 @@
                     let hnaVal = parseNum(getVal(r, kHna));
 
                     let key = dist + '_' + (name || code);
-                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetRp:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
+                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
                     
                     itemData[key].ytdSalesRp += salesVal;
                     itemData[key].ytdQty += salesQty;
@@ -1685,7 +2348,7 @@
                     let hnaVal = parseNum(getVal(r, kHna));
 
                     let key = dist + '_' + (name || code);
-                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetRp:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
+                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, lastHna:0, stockUnit:0 };
 
                     itemData[key].stockUnit += stockUnit;
                     if(hnaVal > 0) itemData[key].lastHna = hnaVal;
@@ -1707,7 +2370,7 @@
                     let stockValue = d.stockUnit * estimatedPrice;
                     let requiredStockValue = requiredStockUnit * estimatedPrice;
 
-                    let targetFYUnit = d.targetRp > 0 ? (d.targetRp / estimatedPrice) : 0;
+                    let targetFYUnit = d.targetFy > 0 ? (d.targetFy / estimatedPrice) : 0;
                     let remainingTargetUnit = targetFYUnit - d.ytdQty;
                     let orderForEOY = remainingTargetUnit > d.stockUnit ? Math.round(remainingTargetUnit - d.stockUnit) : 0;
                     let estEOYValue = orderForEOY * estimatedPrice;
@@ -1716,8 +2379,10 @@
                         ...d, estimatedPrice, avgMonthlySalesUnit, scd, requiredStockUnit, status, color,
                         stockValue, requiredStockValue, orderForEOY, estEOYValue
                     };
-                }).sort((a,b) => b.scd - a.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetRp > 0);
-            }, [sales2026, target2026, stock, m]);
+                }).sort((a,b) => b.scd - a.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetFy > 0);
+            }, [apiData, m]);
+
+            if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             const filteredData = tableData.filter(r => 
                 (statusFilter === 'ALL' || r.status.toUpperCase() === statusFilter) &&
@@ -1739,13 +2404,7 @@
                             <div className="flex flex-wrap gap-4 no-print">
                                 <div className="flex items-center">
                                     <span className="text-[10px] font-bold text-gray-600 mr-2 uppercase">Cari Produk:</span>
-                                    <input 
-                                        type="text" 
-                                        value={searchProd} 
-                                        onChange={(e) => setSearchProd(e.target.value)} 
-                                        placeholder="Ketik nama produk..."
-                                        className="border-2 border-gray-400 rounded p-1 text-xs font-bold text-gray-700 bg-white w-48"
-                                    />
+                                    <input type="text" value={searchProd} onChange={(e) => setSearchProd(e.target.value)} placeholder="Ketik nama produk..." className="border-2 border-gray-400 rounded p-1 text-xs font-bold text-gray-700 bg-white w-48" />
                                 </div>
                                 <div className="flex items-center">
                                     <span className="text-[10px] font-bold text-gray-600 mr-2 uppercase">Status:</span>
@@ -1765,6 +2424,8 @@
                                     <tr>
                                         <th>Dist</th>
                                         <th>Nama Produk</th>
+                                        <th className="text-right">Target MTD (Rp)</th>
+                                        <th className="text-right">Target YTD (Rp)</th>
                                         <th className="text-right">Target FY (Rp)</th>
                                         <th className="text-right">Avg Sales /Bln (Unit)</th>
                                         <th className="text-right bg-blue-50">Stok Saat Ini (Unit)</th>
@@ -1777,12 +2438,14 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredData.length === 0 ? <tr><td colSpan="11" className="text-center py-4 text-gray-400">Tidak ada data untuk filter ini.</td></tr> : null}
+                                    {filteredData.length === 0 ? <tr><td colSpan="13" className="text-center py-4 text-gray-400">Tidak ada data untuk filter ini.</td></tr> : null}
                                     {filteredData.map((r, i) => (
                                         <tr key={i} className="hover:bg-gray-50">
                                             <td className="text-center font-bold text-blue-900">{r.dist}</td>
                                             <td className="font-semibold">{r.name}</td>
-                                            <td className="text-right text-gray-600">{formatCurr(r.targetRp)}</td>
+                                            <td className="text-right font-bold text-gray-700">{formatCurr(r.targetMtd)}</td>
+                                            <td className="text-right font-bold text-gray-700">{formatCurr(r.targetYtd)}</td>
+                                            <td className="text-right text-gray-600">{formatCurr(r.targetFy)}</td>
                                             <td className="text-right font-semibold">{formatCurr(r.avgMonthlySalesUnit)}</td>
                                             <td className="text-right font-black bg-blue-50">{formatCurr(r.stockUnit)}</td>
                                             <td className="text-right font-black bg-blue-50 text-blue-700">{formatCurr(r.stockValue)}</td>
@@ -1797,7 +2460,6 @@
                             </table>
                         </div>
 
-                        {/* TABEL SUMMARY FORECAST */}
                         <div className="bg-slate-50 border border-gray-300 p-4 rounded-lg shadow-sm w-full">
                             <h3 className="font-black text-lg mb-3 text-center uppercase tracking-widest text-slate-800 border-b border-gray-300 pb-2">📊 SUMMARY KEBUTUHAN STOCK & VALUE (ALL APL)</h3>
                             <table className="excel-table w-full text-lg">
@@ -1828,184 +2490,193 @@
         // MENU 8: SUMMARY & PROJECTION 
         // ==========================================
         const SummaryView = ({ apiData, month }) => {
-            if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
+            const summaryData = useMemo(() => {
+                if (!apiData) return null;
+                const target2026 = apiData.target2026 || [];
+                const sales2026 = apiData.sales2026 || [];
+                const sales2025 = apiData.sales2025 || [];
 
-            const target2026 = apiData.target2026 || [];
-            const sales2026 = apiData.sales2026 || [];
-            const sales2025 = apiData.sales2025 || [];
-
-            const m = parseInt(month) || 1;
-            const projM = m < 12 ? m + 1 : 12; 
-            
-            const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            const mName = mNames[m-1];
-            const projMName = mNames[projM-1];
-
-            const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total'];
-            const kBulan = ['bulan', 'month', 'bln'];
-            const kBiz = ['business', 'bisnis', 'type', 'bussines'];
-            const kDiv = ['division', 'divisi', 'div', 'departemen'];
-            const kBrand = ['brand', 'sub_brand', 'sub brand']; 
-            const kChan = ['cluster', 'channel', 'grup', 'tipe outlet'];
-            const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust', 'outlet'];
-
-            const getBizType = (row) => {
-                let biz = String(getVal(row, kBiz) || '').trim().toUpperCase();
-                if(biz === 'PHG' || biz === 'CHG') return biz;
-                let div = String(getVal(row, kDiv) || '').toUpperCase();
-                if(div.includes('CARDIO') || div.includes('CHILD') || div.includes('CRITICAL') || div.includes('MEDICINE') || div.includes('WOMEN') || div.includes('WOUND') || div.includes('SPECIALTY')) return 'PHG';
-                if(div.includes('COMMON') || div.includes('HEALTH') || div.includes('PERSONAL') || div.includes('NATURAL')) return 'CHG';
-                return 'UNKNOWN';
-            };
-            
-            let dMap = { 
-                biz: { 
-                    PHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 }, 
-                    CHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 } 
-                }, 
-                cluster: {}, 
-                brand: {}, 
-                outlet: {}
-            };
-
-            target2026.forEach(r => {
-                let biz = getBizType(r); if(biz==='UNKNOWN') return;
-                let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
-                let blnRaw = getVal(r, kBulan);
+                const m = parseInt(month) || 1;
+                const projM = m < 12 ? m + 1 : 12; 
                 
-                if (blnRaw) {
-                    let bln = parseInt(blnRaw);
-                    if (bln === projM) dMap.biz[biz].q_projM += val;
-                    dMap.biz[biz].q_fy += val;
-                } else {
-                    dMap.biz[biz].q_projM += parseNum(getVal(r, [`quota ${projMName.toLowerCase()}`]));
-                    for(let i=0; i<12; i++) dMap.biz[biz].q_fy += parseNum(getVal(r, [`quota ${mNames[i].toLowerCase()}`]));
-                }
-            });
+                const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const mName = mNames[m-1];
+                const projMName = mNames[projM-1];
 
-            sales2026.forEach(r => {
-                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                let biz = getBizType(r);
-                let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase();
-                let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase();
-                let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase();
-                let sales = parseNum(getVal(r, kSales));
+                const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total'];
+                const kBulan = ['bulan', 'month', 'bln'];
+                const kBiz = ['business', 'bisnis', 'type', 'bussines'];
+                const kDiv = ['division', 'divisi', 'div', 'departemen'];
+                const kBrand = ['brand', 'sub_brand', 'sub brand']; 
+                const kChan = ['cluster', 'channel', 'grup', 'tipe outlet'];
+                const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust', 'outlet'];
 
-                if(dMap.biz[biz]) {
-                    if(bln === m) dMap.biz[biz].a_mtd += sales;
-                    if(bln <= m) dMap.biz[biz].ytd26_m += sales;
-                }
+                const getBizType = (row) => {
+                    let biz = String(getVal(row, kBiz) || '').trim().toUpperCase();
+                    if(biz === 'PHG' || biz === 'CHG') return biz;
+                    let div = String(getVal(row, kDiv) || '').toUpperCase();
+                    if(div.includes('CARDIO') || div.includes('CHILD') || div.includes('CRITICAL') || div.includes('MEDICINE') || div.includes('WOMEN') || div.includes('WOUND') || div.includes('SPECIALTY')) return 'PHG';
+                    if(div.includes('COMMON') || div.includes('HEALTH') || div.includes('PERSONAL') || div.includes('NATURAL')) return 'CHG';
+                    return 'UNKNOWN';
+                };
+                
+                let dMap = { 
+                    biz: { 
+                        PHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 }, 
+                        CHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 } 
+                    }, 
+                    cluster: {}, 
+                    brand: {}, 
+                    outlet: {}
+                };
 
-                if(bln <= m) {
+                target2026.forEach(r => {
+                    let biz = getBizType(r); if(biz==='UNKNOWN') return;
+                    let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                    let blnRaw = getVal(r, kBulan);
+                    
+                    if (blnRaw) {
+                        let bln = parseInt(blnRaw);
+                        if (bln === projM) dMap.biz[biz].q_projM += val;
+                        dMap.biz[biz].q_fy += val;
+                    } else {
+                        dMap.biz[biz].q_projM += parseNum(getVal(r, [`quota ${projMName.toLowerCase()}`]));
+                        for(let i=0; i<12; i++) dMap.biz[biz].q_fy += parseNum(getVal(r, [`quota ${mNames[i].toLowerCase()}`]));
+                    }
+                });
+
+                sales2026.forEach(r => {
+                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                    let biz = getBizType(r);
+                    let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase();
+                    let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase();
+                    let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase();
+                    let sales = parseNum(getVal(r, kSales));
+
+                    if(dMap.biz[biz]) {
+                        if(bln === m) dMap.biz[biz].a_mtd += sales;
+                        if(bln <= m) dMap.biz[biz].ytd26_m += sales;
+                    }
+
+                    if(bln <= m) {
+                        if(brand && brand !== 'UNASSIGNED' && brand !== '') {
+                            if(!dMap.brand[brand]) dMap.brand[brand] = { y26: 0, y25_m: 0 };
+                            dMap.brand[brand].y26 += sales;
+                        }
+                        if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED' && chan !== '') {
+                            if(!dMap.cluster[chan]) dMap.cluster[chan] = { y26: 0, y25_m: 0 };
+                            dMap.cluster[chan].y26 += sales;
+                        }
+                        if(outlet && outlet !== 'UNASSIGNED' && outlet !== 'UNDEFINED' && outlet !== '') {
+                            if(!dMap.outlet[outlet]) dMap.outlet[outlet] = { y26: 0, y25_m: 0 };
+                            dMap.outlet[outlet].y26 += sales;
+                        }
+                    }
+                });
+
+                sales2025.forEach(r => {
+                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                    let biz = getBizType(r);
+                    let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase();
+                    let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase();
+                    let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase();
+                    let sales = parseNum(getVal(r, kSales));
+
+                    if(dMap.biz[biz]) {
+                        dMap.biz[biz].a25_fy += sales;
+                        if(bln <= m) dMap.biz[biz].ytd25_m += sales;
+                    }
+
                     if(brand && brand !== 'UNASSIGNED' && brand !== '') {
                         if(!dMap.brand[brand]) dMap.brand[brand] = { y26: 0, y25_m: 0 };
-                        dMap.brand[brand].y26 += sales;
+                        if(bln <= m) dMap.brand[brand].y25_m += sales;
                     }
                     if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED' && chan !== '') {
                         if(!dMap.cluster[chan]) dMap.cluster[chan] = { y26: 0, y25_m: 0 };
-                        dMap.cluster[chan].y26 += sales;
+                        if(bln <= m) dMap.cluster[chan].y25_m += sales;
                     }
                     if(outlet && outlet !== 'UNASSIGNED' && outlet !== 'UNDEFINED' && outlet !== '') {
                         if(!dMap.outlet[outlet]) dMap.outlet[outlet] = { y26: 0, y25_m: 0 };
-                        dMap.outlet[outlet].y26 += sales;
+                        if(bln <= m) dMap.outlet[outlet].y25_m += sales;
                     }
-                }
-            });
+                });
 
-            sales2025.forEach(r => {
-                let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                let biz = getBizType(r);
-                let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase();
-                let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase();
-                let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase();
-                let sales = parseNum(getVal(r, kSales));
-
-                if(dMap.biz[biz]) {
-                    dMap.biz[biz].a25_fy += sales;
-                    if(bln <= m) dMap.biz[biz].ytd25_m += sales;
-                }
-
-                if(brand && brand !== 'UNASSIGNED' && brand !== '') {
-                    if(!dMap.brand[brand]) dMap.brand[brand] = { y26: 0, y25_m: 0 };
-                    if(bln <= m) dMap.brand[brand].y25_m += sales;
-                }
-                if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED' && chan !== '') {
-                    if(!dMap.cluster[chan]) dMap.cluster[chan] = { y26: 0, y25_m: 0 };
-                    if(bln <= m) dMap.cluster[chan].y25_m += sales;
-                }
-                if(outlet && outlet !== 'UNASSIGNED' && outlet !== 'UNDEFINED' && outlet !== '') {
-                    if(!dMap.outlet[outlet]) dMap.outlet[outlet] = { y26: 0, y25_m: 0 };
-                    if(bln <= m) dMap.outlet[outlet].y25_m += sales;
-                }
-            });
-
-            let rawChgEst = dMap.biz.CHG.ytd26_m > 0 ? (dMap.biz.CHG.ytd26_m / m) : 0; 
-            let rawPhgEst = dMap.biz.PHG.ytd26_m > 0 ? (dMap.biz.PHG.ytd26_m / m) : 0; 
-            let rawTotalEst = rawChgEst + rawPhgEst;
-            let totalQProj = dMap.biz.CHG.q_projM + dMap.biz.PHG.q_projM;
-            
-            let rawTotalAchEst = getP(rawTotalEst, totalQProj);
-            let multiplier = 1;
-
-            if (rawTotalAchEst < 95 && totalQProj > 0) {
-                let minimumRequiredEst = (95 / 100) * totalQProj;
-                multiplier = minimumRequiredEst / rawTotalEst; 
-            }
-
-            const calcProjection = (bz, rawEst) => {
-                const data = dMap.biz[bz];
-                const est = rawEst * multiplier; 
-                const achEst = getP(est, data.q_projM);
+                let rawChgEst = dMap.biz.CHG.ytd26_m > 0 ? (dMap.biz.CHG.ytd26_m / m) : 0; 
+                let rawPhgEst = dMap.biz.PHG.ytd26_m > 0 ? (dMap.biz.PHG.ytd26_m / m) : 0; 
+                let rawTotalEst = rawChgEst + rawPhgEst;
+                let totalQProj = dMap.biz.CHG.q_projM + dMap.biz.PHG.q_projM;
                 
-                const avgYtdEst26 = (data.ytd26_m + est) / projM;
-                const avg25 = data.a25_fy / 12;
-                const grwtAvg = calcGrowth(avgYtdEst26, avg25);
-                const grwtYtd = calcGrowth(data.ytd26_m, data.ytd25_m);
+                let rawTotalAchEst = getP(rawTotalEst, totalQProj);
+                let multiplier = 1;
 
-                return { bz, q_projM: data.q_projM, est, achEst, grwtAvg, grwtYtd };
-            };
+                if (rawTotalAchEst < 95 && totalQProj > 0) {
+                    let minimumRequiredEst = (95 / 100) * totalQProj;
+                    multiplier = minimumRequiredEst / rawTotalEst; 
+                }
 
-            const chgProj = calcProjection('CHG', rawChgEst);
-            const phgProj = calcProjection('PHG', rawPhgEst);
+                const calcProjection = (bz, rawEst) => {
+                    const data = dMap.biz[bz];
+                    const est = rawEst * multiplier; 
+                    const achEst = getP(est, data.q_projM);
+                    
+                    const avgYtdEst26 = (data.ytd26_m + est) / projM;
+                    const avg25 = data.a25_fy / 12;
+                    const grwtAvg = calcGrowth(avgYtdEst26, avg25);
+                    const grwtYtd = calcGrowth(data.ytd26_m, data.ytd25_m);
 
-            const totalEst = chgProj.est + phgProj.est;
-            const totalAchEst = getP(totalEst, totalQProj);
+                    return { bz, q_projM: data.q_projM, est, achEst, grwtAvg, grwtYtd };
+                };
 
-            const totalCurrComb = (dMap.biz.CHG.ytd26_m + chgProj.est) + (dMap.biz.PHG.ytd26_m + phgProj.est);
-            const totalPrevComb = (dMap.biz.CHG.a25_fy + dMap.biz.PHG.a25_fy) / 12;
-            const totalGrwtAvg = calcGrowth(totalCurrComb / projM, totalPrevComb);
+                const chgProj = calcProjection('CHG', rawChgEst);
+                const phgProj = calcProjection('PHG', rawPhgEst);
 
-            const totalYtd26_m = dMap.biz.CHG.ytd26_m + dMap.biz.PHG.ytd26_m;
-            const totalYtd25_m = dMap.biz.CHG.ytd25_m + dMap.biz.PHG.ytd25_m;
-            const totalGrwtYtd = calcGrowth(totalYtd26_m, totalYtd25_m);
+                const totalEst = chgProj.est + phgProj.est;
+                const totalAchEst = getP(totalEst, totalQProj);
 
-            const bizEval = [chgProj, phgProj].filter(b => b.grwtAvg < 0 || b.grwtYtd < 0);
+                const totalCurrComb = (dMap.biz.CHG.ytd26_m + chgProj.est) + (dMap.biz.PHG.ytd26_m + phgProj.est);
+                const totalPrevComb = (dMap.biz.CHG.a25_fy + dMap.biz.PHG.a25_fy) / 12;
+                const totalGrwtAvg = calcGrowth(totalCurrComb / projM, totalPrevComb);
 
-            const clusterEval = Object.keys(dMap.cluster).map(k => {
-                let d = dMap.cluster[k];
-                let grwt = calcGrowth(d.y26, d.y25_m);
-                return { name: k, grwt };
-            }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
+                const totalYtd26_m = dMap.biz.CHG.ytd26_m + dMap.biz.PHG.ytd26_m;
+                const totalYtd25_m = dMap.biz.CHG.ytd25_m + dMap.biz.PHG.ytd25_m;
+                const totalGrwtYtd = calcGrowth(totalYtd26_m, totalYtd25_m);
 
-            const brandEval = Object.keys(dMap.brand).map(k => {
-                let d = dMap.brand[k];
-                let grwt = calcGrowth(d.y26, d.y25_m);
-                return { name: k, grwt };
-            }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
+                const bizEval = [chgProj, phgProj].filter(b => b.grwtAvg < 0 || b.grwtYtd < 0);
 
-            const outletEval = Object.keys(dMap.outlet).map(k => {
-                let d = dMap.outlet[k];
-                let grwt = calcGrowth(d.y26, d.y25_m);
-                return { name: k, grwt, y25_m: d.y25_m };
-            }).filter(d => d.grwt < 0 && d.y25_m > 0).sort((a,b) => a.grwt - b.grwt);
+                const clusterEval = Object.keys(dMap.cluster).map(k => {
+                    let d = dMap.cluster[k];
+                    let grwt = calcGrowth(d.y26, d.y25_m);
+                    return { name: k, grwt };
+                }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
+
+                const brandEval = Object.keys(dMap.brand).map(k => {
+                    let d = dMap.brand[k];
+                    let grwt = calcGrowth(d.y26, d.y25_m);
+                    return { name: k, grwt };
+                }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
+
+                const outletEval = Object.keys(dMap.outlet).map(k => {
+                    let d = dMap.outlet[k];
+                    let grwt = calcGrowth(d.y26, d.y25_m);
+                    return { name: k, grwt, y25_m: d.y25_m };
+                }).filter(d => d.grwt < 0 && d.y25_m > 0).sort((a,b) => a.grwt - b.grwt);
+
+                return { 
+                    chgProj, phgProj, totalQProj, totalEst, totalAchEst, totalGrwtAvg, totalGrwtYtd,
+                    bizEval, clusterEval, brandEval, outletEval, mName, projMName
+                };
+
+            }, [apiData, month]);
+
+            if (!apiData || !summaryData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
                     <div className="bg-white p-6 border shadow-md w-full">
                         <div className="text-center mb-6">
-                            <h2 className="header-title !text-xl !px-12">PROJECTION & ESTIMATION FOR {projMName.toUpperCase()} 2026</h2>
+                            <h2 className="header-title !text-xl !px-12">PROJECTION & ESTIMATION FOR {summaryData.projMName.toUpperCase()} 2026</h2>
                             <p className="text-xs text-gray-500 font-semibold italic">
-                                Based on Selected Month: <b>{mName} 2026</b> | Projection Month: <b>{projMName} 2026</b>
+                                Based on Selected Month: <b>{summaryData.mName} 2026</b> | Projection Month: <b>{summaryData.projMName} 2026</b>
                             </p>
                         </div>
 
@@ -2013,37 +2684,37 @@
                             <thead>
                                 <tr>
                                     <th className="text-left text-sm py-2">Business Type</th>
-                                    <th className="text-right text-sm py-2">Sum of Quota {projMName}</th>
-                                    <th className="text-right text-sm py-2">EST {projMName}</th>
+                                    <th className="text-right text-sm py-2">Sum of Quota {summaryData.projMName}</th>
+                                    <th className="text-right text-sm py-2">EST {summaryData.projMName}</th>
                                     <th className="text-center text-sm py-2">% Ach Est</th>
-                                    <th className="text-center text-sm py-2">Growth Avg ({mName}+{projMName})</th>
-                                    <th className="text-center text-sm py-2">Growth YTD ({mName})</th>
+                                    <th className="text-center text-sm py-2">Growth Avg ({summaryData.mName}+{summaryData.projMName})</th>
+                                    <th className="text-center text-sm py-2">Growth YTD ({summaryData.mName})</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
                                     <td className="text-left font-bold text-sm py-2">CHG</td>
-                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(chgProj.q_projM)}</td>
-                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(chgProj.est)}</td>
-                                    <td className={`text-center font-bold text-sm py-2 ${cAch(chgProj.achEst)}`}>{chgProj.achEst}%</td>
-                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(chgProj.grwtAvg)}`}>{fGrw(chgProj.grwtAvg)}</td>
-                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(chgProj.grwtYtd)}`}>{fGrw(chgProj.grwtYtd)}</td>
+                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(summaryData.chgProj.q_projM)}</td>
+                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(summaryData.chgProj.est)}</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cAch(summaryData.chgProj.achEst)}`}>{summaryData.chgProj.achEst}%</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(summaryData.chgProj.grwtAvg)}`}>{fGrw(summaryData.chgProj.grwtAvg)}</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(summaryData.chgProj.grwtYtd)}`}>{fGrw(summaryData.chgProj.grwtYtd)}</td>
                                 </tr>
                                 <tr>
                                     <td className="text-left font-bold text-sm py-2">PHG</td>
-                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(phgProj.q_projM)}</td>
-                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(phgProj.est)}</td>
-                                    <td className={`text-center font-bold text-sm py-2 ${cAch(phgProj.achEst)}`}>{phgProj.achEst}%</td>
-                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(phgProj.grwtAvg)}`}>{fGrw(phgProj.grwtAvg)}</td>
-                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(phgProj.grwtYtd)}`}>{fGrw(phgProj.grwtYtd)}</td>
+                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(summaryData.phgProj.q_projM)}</td>
+                                    <td className="text-right font-semibold text-sm py-2">{formatCurr(summaryData.phgProj.est)}</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cAch(summaryData.phgProj.achEst)}`}>{summaryData.phgProj.achEst}%</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(summaryData.phgProj.grwtAvg)}`}>{fGrw(summaryData.phgProj.grwtAvg)}</td>
+                                    <td className={`text-center font-bold text-sm py-2 ${cGrw(summaryData.phgProj.grwtYtd)}`}>{fGrw(summaryData.phgProj.grwtYtd)}</td>
                                 </tr>
                                 <tr className="total-row">
                                     <td className="text-left font-black text-sm py-2">Total</td>
-                                    <td className="text-right font-black text-sm py-2">{formatCurr(totalQProj)}</td>
-                                    <td className="text-right font-black text-sm py-2">{formatCurr(totalEst)}</td>
-                                    <td className={`text-center font-black text-sm py-2 ${cAch(totalAchEst)}`}>{totalAchEst}%</td>
-                                    <td className={`text-center font-black text-sm py-2 ${cGrw(totalGrwtAvg)}`}>{fGrw(totalGrwtAvg)}</td>
-                                    <td className={`text-center font-black text-sm py-2 ${cGrw(totalGrwtYtd)}`}>{fGrw(totalGrwtYtd)}</td>
+                                    <td className="text-right font-black text-sm py-2">{formatCurr(summaryData.totalQProj)}</td>
+                                    <td className="text-right font-black text-sm py-2">{formatCurr(summaryData.totalEst)}</td>
+                                    <td className={`text-center font-black text-sm py-2 ${cAch(summaryData.totalAchEst)}`}>{summaryData.totalAchEst}%</td>
+                                    <td className={`text-center font-black text-sm py-2 ${cGrw(summaryData.totalGrwtAvg)}`}>{fGrw(summaryData.totalGrwtAvg)}</td>
+                                    <td className={`text-center font-black text-sm py-2 ${cGrw(summaryData.totalGrwtYtd)}`}>{fGrw(summaryData.totalGrwtYtd)}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -2056,11 +2727,11 @@
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4 w-full">
                                 <div className="bg-white p-3 border border-red-200 rounded">
                                     <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Business Type Minus:</h4>
-                                    {bizEval.length === 0 ? (
+                                    {summaryData.bizEval.length === 0 ? (
                                         <p className="text-xs text-green-600 font-semibold">Semua Business Type Positif.</p>
                                     ) : (
                                         <ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">
-                                            {bizEval.map((b, i) => (
+                                            {summaryData.bizEval.map((b, i) => (
                                                 <li key={i}>{b.bz}: Avg <span className="text-red-600">{b.grwtAvg}%</span> | YTD <span className="text-red-600">{b.grwtYtd}%</span></li>
                                             ))}
                                         </ul>
@@ -2069,12 +2740,12 @@
 
                                 <div className="bg-white p-3 border border-red-200 rounded">
                                     <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Cluster / Channel Minus:</h4>
-                                    {clusterEval.length === 0 ? (
+                                    {summaryData.clusterEval.length === 0 ? (
                                         <p className="text-xs text-green-600 font-semibold">Semua Cluster/Channel Positif.</p>
                                     ) : (
                                         <div className="max-h-36 overflow-y-auto pr-1">
                                             <ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">
-                                                {clusterEval.map((c, i) => (
+                                                {summaryData.clusterEval.map((c, i) => (
                                                     <li key={i}>{c.name}: <span className="float-right text-red-600">{c.grwt}%</span></li>
                                                 ))}
                                             </ul>
@@ -2084,12 +2755,12 @@
 
                                 <div className="bg-white p-3 border border-red-200 rounded">
                                     <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Sub Brand / Brand Minus:</h4>
-                                    {brandEval.length === 0 ? (
+                                    {summaryData.brandEval.length === 0 ? (
                                         <p className="text-xs text-green-600 font-semibold">Semua Sub Brand Positif.</p>
                                     ) : (
                                         <div className="max-h-36 overflow-y-auto pr-1">
                                             <ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">
-                                                {brandEval.map((b, i) => (
+                                                {summaryData.brandEval.map((b, i) => (
                                                     <li key={i}>{b.name}: <span className="float-right text-red-600">{b.grwt}%</span></li>
                                                 ))}
                                             </ul>
@@ -2099,12 +2770,12 @@
 
                                 <div className="bg-white p-3 border border-red-200 rounded">
                                     <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Outlet Minus:</h4>
-                                    {outletEval.length === 0 ? (
+                                    {summaryData.outletEval.length === 0 ? (
                                         <p className="text-xs text-green-600 font-semibold">Semua Outlet Positif.</p>
                                     ) : (
                                         <div className="max-h-36 overflow-y-auto pr-1">
                                             <ul className="list-disc pl-4 text-[10px] text-red-700 font-bold space-y-1">
-                                                {outletEval.map((o, i) => (
+                                                {summaryData.outletEval.map((o, i) => (
                                                     <li key={i} className="border-b border-red-50 pb-1 mb-1">{o.name}: <span className="float-right text-red-600">{o.grwt}%</span></li>
                                                 ))}
                                             </ul>
@@ -2115,7 +2786,7 @@
 
                             <div className="mt-4 pt-3 border-t border-red-200 bg-red-100/50 p-3 rounded text-xs text-red-900 leading-relaxed font-semibold">
                                 <b>GARIS BESAR EVALUASI:</b><br/>
-                                Ditinjau dari data hingga bulan {mName} 2026, terdapat <b>{bizEval.length} Business Type</b>, <b>{clusterEval.length} Cluster</b>, <b>{brandEval.length} Sub Brand</b>, dan <b>{outletEval.length} Outlet</b> yang mengalami pertumbuhan minus (decline). Prioritas aksi mendesak difokuskan pada pemulihan sales di segmen minus tersebut guna memastikan pencapaian target estimasi bulan {projMName} 2026 sebesar <b>Rp {formatCurr(totalEst)}</b> tercapai secara optimal.
+                                Ditinjau dari data hingga bulan {summaryData.mName} 2026, terdapat <b>{summaryData.bizEval.length} Business Type</b>, <b>{summaryData.clusterEval.length} Cluster</b>, <b>{summaryData.brandEval.length} Sub Brand</b>, dan <b>{summaryData.outletEval.length} Outlet</b> yang mengalami pertumbuhan minus (decline). Prioritas aksi mendesak difokuskan pada pemulihan sales di segmen minus tersebut guna memastikan pencapaian target estimasi bulan {summaryData.projMName} 2026 sebesar <b>Rp {formatCurr(summaryData.totalEst)}</b> tercapai secara optimal.
                             </div>
                         </div>
                     </div>
@@ -2194,8 +2865,6 @@
             const [searchOutlet, setSearchOutlet] = useState('');
             const [filterDivisi, setFilterDivisi] = useState('ALL');
             const [filterDistributor, setFilterDistributor] = useState('ALL');
-            
-            const [presenterOutlet, setPresenterOutlet] = useState('');
 
             useEffect(() => { 
                 setIsLoading(true);
@@ -2229,58 +2898,58 @@
             }, [apiData]);
 
             return (
-                <div className="min-h-screen">
+                <div className="min-h-screen flex flex-col">
                     <div className="bg-white border-b shadow-sm sticky top-0 z-50 no-print">
-                        <div className="max-w-[1400px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
-                            <h1 className="text-xl font-black italic text-blue-900 tracking-tighter w-full md:w-auto">Push Limits Dashboard</h1>
+                        <div className="max-w-[1400px] mx-auto px-2 py-2 md:px-4 md:py-3 flex flex-wrap justify-between items-center gap-2">
+                            <h1 className="text-lg md:text-xl font-black italic text-blue-900 tracking-tighter w-full lg:w-auto text-center lg:text-left">Push Limits Dashboard</h1>
                             
-                            <div className="flex flex-wrap space-x-1 w-full xl:w-auto justify-center">
-                                <button onClick={()=>setActiveTab('presenter')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='presenter'?'border-red-500 text-red-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Presentasi Business Review</button>
-                                <button onClick={()=>setActiveTab('summary')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='summary'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Summary</button>
-                                <button onClick={()=>setActiveTab('dashboard')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='dashboard'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Report Sales</button>
-                                <button onClick={()=>setActiveTab('pareto')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='pareto'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Pareto Brand</button>
-                                <button onClick={()=>setActiveTab('city')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='city'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Big City Papua</button>
-                                <button onClick={()=>setActiveTab('outlets')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='outlets'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Buying Outlets</button>
-                                <button onClick={()=>setActiveTab('npd')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='npd'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>NPD Monitor</button>
-                                <button onClick={()=>setActiveTab('forecast')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='forecast'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Forecast</button>
-                                <button onClick={()=>setActiveTab('upload')} className={`px-3 py-1 text-sm font-bold border-b-4 ${activeTab==='upload'?'border-blue-500 text-blue-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Upload</button>
+                            <div className="flex w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 snap-x justify-start lg:justify-center">
+                                <div className="flex space-x-1 whitespace-nowrap px-1">
+                                    <button onClick={()=>setActiveTab('presenter')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='presenter'?'border-red-500 text-red-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Business Review</button>
+                                    <button onClick={()=>setActiveTab('summary')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='summary'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Summary</button>
+                                    <button onClick={()=>setActiveTab('dashboard')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='dashboard'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Report Sales</button>
+                                    <button onClick={()=>setActiveTab('pareto')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='pareto'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Pareto Brand</button>
+                                    <button onClick={()=>setActiveTab('city')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='city'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Big City Papua</button>
+                                    <button onClick={()=>setActiveTab('outlets')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='outlets'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Buying Outlets</button>
+                                    <button onClick={()=>setActiveTab('npd')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='npd'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>NPD Monitor</button>
+                                    <button onClick={()=>setActiveTab('forecast')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='forecast'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Forecast</button>
+                                    <button onClick={()=>setActiveTab('upload')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='upload'?'border-blue-500 text-blue-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Upload</button>
+                                </div>
                             </div>
                             
-                            <div className="flex flex-wrap items-center gap-2 text-sm font-bold w-full md:w-auto mt-2 md:mt-0 justify-end">
-                                {isLoading ? <span className="text-orange-500">Memuat Server...</span> : errorMsg ? <span className="text-red-500">⚠️ Error Server</span> : <span className="text-green-600 hidden md:inline">✅ Terhubung</span>}
+                            <div className="flex flex-wrap items-center gap-2 text-sm font-bold w-full lg:w-auto justify-center lg:justify-end">
+                                {isLoading ? <span className="text-orange-500 text-xs">Memuat...</span> : errorMsg ? <span className="text-red-500 text-xs">⚠️ Error</span> : <span className="text-green-600 hidden lg:inline text-xs">✅ Terhubung</span>}
                                 {activeTab !== 'upload' && (
-                                    <div className="flex items-center bg-gray-100 p-1 rounded border gap-1">
-                                        <span className="text-[10px] text-gray-500 uppercase">Set Bulan:</span>
-                                        <select value={filters.month} onChange={(e) => setFilters({month: e.target.value})} className="bg-white border p-1 font-black text-orange-600 text-xs">
+                                    <div className="flex items-center bg-gray-100 p-1 rounded border gap-1 shadow-sm">
+                                        <select value={filters.month} onChange={(e) => setFilters({...filters, month: e.target.value})} className="bg-white border p-1 font-black text-orange-600 text-[10px] md:text-xs rounded">
                                             {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Bln {m}</option>)}
                                         </select>
                                         
-                                        {/* KUMPULAN TOMBOL DOWNLOAD */}
-                                        <button onClick={() => window.print()} className="bg-gray-800 hover:bg-black text-white px-2 py-1 rounded text-[10px] transition-colors shadow" title="Download PDF">PDF</button>
-                                        <button onClick={() => exportToExcel(activeTab)} className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-[10px] transition-colors shadow" title="Download Excel">XLSX</button>
-                                        <button onClick={() => exportToImage(activeTab)} className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] transition-colors shadow" title="Download Gambar PNG">PNG</button>
+                                        <button onClick={() => window.print()} className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download PDF / Print">PDF</button>
+                                        <button onClick={() => exportToExcel(activeTab)} className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download Excel (.xlsx)">XLSX</button>
+                                        <button onClick={() => exportToImage(activeTab)} className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download Gambar (Kirim ke WA)">PNG</button>
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {activeTab === 'dashboard' && (
-                            <div className="bg-gray-50 border-t py-2 px-4 flex flex-wrap gap-4 max-w-[1400px] mx-auto justify-end items-center no-print">
-                                <div className="text-xs font-bold text-gray-500 uppercase mr-auto w-full md:w-auto">Global Filters:</div>
+                            <div className="bg-gray-50 border-t py-2 px-4 flex flex-wrap gap-2 md:gap-4 max-w-[1400px] mx-auto justify-end items-center no-print">
+                                <div className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mr-auto w-full md:w-auto">Global Filters:</div>
                                 
-                                <input list="outletList" placeholder="Cari Nama Outlet..." value={searchOutlet} onChange={(e) => setSearchOutlet(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-48" />
+                                <input list="outletList" placeholder="Cari Nama Outlet..." value={searchOutlet} onChange={(e) => setSearchOutlet(e.target.value)} className="border border-gray-400 p-1 text-[10px] md:text-xs w-full md:w-48" />
                                 <datalist id="outletList">
                                     <option value="">-- Semua Outlet --</option>
                                     {outletSuggestions.map((n, i) => <option key={i} value={n} />)}
                                 </datalist>
                                 
-                                <select value={filterDistributor} onChange={(e) => setFilterDistributor(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-40">
+                                <select value={filterDistributor} onChange={(e) => setFilterDistributor(e.target.value)} className="border border-gray-400 p-1 text-[10px] md:text-xs w-full md:w-40">
                                     <option value="ALL">Semua Distributor</option>
                                     <option value="APL">Distributor: APL</option>
                                     <option value="KFT">Distributor: KFT & Others</option>
                                 </select>
                                 
-                                <select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)} className="border border-gray-400 p-1 text-xs w-full md:w-40">
+                                <select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)} className="border border-gray-400 p-1 text-[10px] md:text-xs w-full md:w-40">
                                     <option value="ALL">Semua Divisi</option>
                                     <option value="COMMON CURE">COMMON CURE (CHG)</option>
                                     <option value="HEALTH SUPPLEMENT">HEALTH SUPPLEMENT (CHG)</option>
@@ -2297,32 +2966,37 @@
                         )}
                     </div>
                     
-                    <main className="max-w-[1400px] mx-auto px-4 mt-6 w-full">
+                    <main className="max-w-[1400px] mx-auto px-2 md:px-4 mt-4 w-full flex-1">
                         {isLoading ? (
-                            <div className="text-center p-12 mt-10 text-gray-600 font-semibold border bg-white shadow-sm rounded no-print">
+                            <div className="text-center p-8 md:p-12 mt-10 text-gray-600 font-semibold border bg-white shadow-sm rounded no-print">
                                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-orange-500 border-t-transparent mb-4"></div>
-                                <p>Sistem sedang menarik & memproses data dari Google Sheets. Harap tunggu...</p>
+                                <p className="text-sm md:text-base">Sistem sedang menarik & memproses data dari Google Sheets. Harap tunggu...</p>
                             </div>
                         ) : errorMsg && !apiData ? (
-                            <div className="p-8 m-4 bg-amber-50 border border-amber-300 rounded text-amber-900 text-center shadow no-print">
-                                <h3 className="text-lg font-bold mb-2">⚠️ Peringatan Server / Koneksi</h3>
-                                <p className="text-sm mb-4">{errorMsg}</p>
-                                <p className="text-xs text-gray-600 mb-4">Aplikasi tetap dapat digunakan untuk mengunggah file data baru via menu <b>Upload</b>.</p>
-                                <button onClick={() => window.location.reload()} className="px-4 py-2 bg-amber-600 text-white font-bold rounded">
+                            <div className="p-4 md:p-8 m-2 md:m-4 bg-amber-50 border border-amber-300 rounded text-amber-900 text-center shadow no-print">
+                                <h3 className="text-base md:text-lg font-bold mb-2">⚠️ Peringatan Server / Koneksi</h3>
+                                <p className="text-xs md:text-sm mb-4">{errorMsg}</p>
+                                <p className="text-[10px] md:text-xs text-gray-600 mb-4">Aplikasi tetap dapat digunakan untuk mengunggah file data baru via menu <b>Upload</b>.</p>
+                                <button onClick={() => window.location.reload()} className="px-4 py-2 bg-amber-600 text-white font-bold rounded text-xs md:text-sm">
                                     Coba Muat Ulang
                                 </button>
                             </div>
-                        ) : activeTab === 'presenter' ? <OutletPresenterView apiData={apiData} month={filters.month} selectedOutlet={presenterOutlet} onSelectOutlet={setPresenterOutlet} /> :
+                        ) : activeTab === 'presenter' ? <BusinessReviewParentView apiData={apiData} globalMonth={filters.month} /> :
                             activeTab === 'summary' ? <SummaryView apiData={apiData} month={filters.month} /> :
                             activeTab === 'dashboard' ? <ReportSalesView apiData={apiData} month={filters.month} searchOutlet={searchOutlet} filterDivisi={filterDivisi} filterDistributor={filterDistributor} /> :
                             activeTab === 'pareto' ? <ParetoBrandView apiData={apiData} month={filters.month} /> :
                             activeTab === 'city' ? <CityView apiData={apiData} month={filters.month} /> :
                             activeTab === 'outlets' ? <OutletAnalysisView apiData={apiData} month={filters.month} /> :
-                            activeTab === 'npd' ? <NPDView apiData={apiData} /> :
+                            activeTab === 'npd' ? <NPDView apiData={apiData} month={filters.month} /> :
                             activeTab === 'forecast' ? <ForecastView apiData={apiData} month={filters.month} /> :
                             <UploadView />
                         }
                     </main>
+
+                    <footer className="mt-auto bg-gray-800 text-white text-center py-4 text-xs font-bold border-t-4 border-orange-500 no-print w-full">
+                        Web Monitoring BY Ellyas Martadinata
+                    </footer>
+
                 </div>
             );
         };
