@@ -12,11 +12,10 @@
     <script crossorigin src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        html { overflow-x: hidden; }
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #000; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; width: 100%; }
-        #root { overflow-x: hidden; width: 100%; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #000; display: flex; flex-direction: column; min-height: 100vh; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
@@ -40,6 +39,31 @@
         .city-stat { display: flex; justify-content: space-between; margin-bottom: 1px;}
         @keyframes ping-map { 75%, 100% { transform: scale(2.5); opacity: 0; } }
         .animate-ping-map { animation: ping-map 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+        /* MOBILE RESPONSIVE - hanya untuk tampilan HP, tidak mengubah logika/data desktop */
+        html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+        #root { width: 100%; max-width: 100%; overflow-x: hidden; }
+        @media (max-width: 767px) {
+            body { min-width: 0 !important; width: 100% !important; font-size: 12px; }
+            main { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0 !important; padding-left: 8px !important; padding-right: 8px !important; box-sizing: border-box; overflow-x: hidden; }
+            header, header > div { width: 100% !important; max-width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
+            header .overflow-x-auto { overflow-x: visible !important; }
+            header .overflow-x-auto > div { white-space: normal !important; flex-wrap: wrap !important; justify-content: center !important; width: 100% !important; }
+            header .overflow-x-auto button { white-space: normal !important; flex: 0 0 auto; font-size: 10px !important; padding: 7px 8px !important; }
+            .excel-table, .npd-table { width: 100% !important; min-width: 0 !important; max-width: 100% !important; table-layout: auto !important; font-size: 8px !important; }
+            .excel-table th, .excel-table td { padding: 3px 2px !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
+            .npd-table th, .npd-table td { font-size: 7px !important; padding: 2px 1px !important; }
+            .overflow-x-auto { overflow-x: hidden !important; max-width: 100% !important; }
+            .w-\[1200px\], .min-w-\[1000px\], .min-w-\[800px\] { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
+            .max-w-\[1400px\], .max-w-6xl { max-width: 100% !important; }
+            .header-title { max-width: 100%; box-sizing: border-box; padding-left: 8px !important; padding-right: 8px !important; font-size: 11px !important; }
+            .city-card { min-width: 0 !important; }
+            .city-info { min-width: 0; }
+            .city-stat { gap: 4px; }
+            input, select, button { max-width: 100%; box-sizing: border-box; }
+            .text-4xl { font-size: 2rem !important; }
+            .text-3xl { font-size: 1.5rem !important; }
+            .text-2xl { font-size: 1.25rem !important; }
+        }
         @media print {
             .no-print, header, .global-filters { display: none !important; }
             body { background-color: #fff !important; font-size: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -90,14 +114,61 @@
             XLSX.writeFile(wb, `Dashboard_${menuName.replace(/ /g, '_')}_${new Date().getTime()}.xlsx`);
         };
 
-        const exportToImage = (menuName) => {
+        const exportToPDF = async (menuName) => {
+            const mainElement = document.querySelector('main');
+            if (!mainElement) return;
+            if (typeof html2pdf === 'undefined') { alert("Fitur PDF belum siap. Silakan coba lagi."); return; }
+            const oldWidth = mainElement.style.width;
+            const oldMaxWidth = mainElement.style.maxWidth;
+            const oldOverflow = mainElement.style.overflow;
+            const oldPadding = mainElement.style.padding;
+            try {
+                mainElement.style.width = '1200px';
+                mainElement.style.maxWidth = '1200px';
+                mainElement.style.overflow = 'visible';
+                mainElement.style.padding = '12px';
+                await html2pdf().set({
+                    margin: 6,
+                    filename: `Dashboard_${menuName.replace(/ /g, '_')}_${new Date().getTime()}.pdf`,
+                    image: { type: 'jpeg', quality: 0.95 },
+                    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#f1f5f9', logging: false, ignoreElements: (el) => el.classList.contains('no-print') },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true },
+                    pagebreak: { mode: ['css', 'legacy'] }
+                }).from(mainElement).save();
+            } catch (err) {
+                console.error("Gagal men-download PDF:", err);
+                alert("Gagal men-download PDF.");
+            } finally {
+                mainElement.style.width = oldWidth;
+                mainElement.style.maxWidth = oldMaxWidth;
+                mainElement.style.overflow = oldOverflow;
+                mainElement.style.padding = oldPadding;
+            }
+        };
+
+        const exportToImage = async (menuName) => {
             const mainElement = document.querySelector('main');
             if (!mainElement) return;
             const oldWidth = mainElement.style.width;
-            if (window.innerWidth < 1024) mainElement.style.width = '1200px'; 
-            html2canvas(mainElement, { scale: 2, useCORS: true, backgroundColor: '#f1f5f9', ignoreElements: (el) => el.classList.contains('no-print') }).then(canvas => {
-                const link = document.createElement('a'); link.download = `Dashboard_${menuName.replace(/ /g, '_')}_${new Date().getTime()}.png`; link.href = canvas.toDataURL('image/png'); link.click(); mainElement.style.width = oldWidth;
-            }).catch(err => { alert("Gagal men-download gambar."); mainElement.style.width = oldWidth; });
+            const oldMaxWidth = mainElement.style.maxWidth;
+            const oldOverflow = mainElement.style.overflow;
+            try {
+                mainElement.style.width = '1400px';
+                mainElement.style.maxWidth = '1400px';
+                mainElement.style.overflow = 'visible';
+                const canvas = await html2canvas(mainElement, { scale: 2.5, useCORS: true, allowTaint: false, backgroundColor: '#f1f5f9', logging: false, ignoreElements: (el) => el.classList.contains('no-print') });
+                const link = document.createElement('a');
+                link.download = `Dashboard_${menuName.replace(/ /g, '_')}_${new Date().getTime()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                console.error("Gagal men-download gambar:", err);
+                alert("Gagal men-download gambar.");
+            } finally {
+                mainElement.style.width = oldWidth;
+                mainElement.style.maxWidth = oldMaxWidth;
+                mainElement.style.overflow = oldOverflow;
+            }
         };
 
         const globalKeyCache = new Map();
@@ -2005,7 +2076,7 @@
                                         <select value={filters.month} onChange={(e) => setFilters({...filters, month: e.target.value})} className="bg-white border p-1 font-black text-orange-600 text-[10px] md:text-xs rounded">
                                             {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Bln {m}</option>)}
                                         </select>
-                                        <button onClick={() => window.print()} className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download PDF / Print">PDF</button>
+                                        <button onClick={() => exportToPDF(activeTab)} className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download PDF / Print">PDF</button>
                                         <button onClick={() => exportToExcel(activeTab)} className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download Excel (.xlsx)">XLSX</button>
                                         <button onClick={() => exportToImage(activeTab)} className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download Gambar (Kirim ke WA)">PNG</button>
                                     </div>
