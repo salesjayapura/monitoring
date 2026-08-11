@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #000; display: flex; flex-direction: column; min-height: 100vh; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -39,6 +40,7 @@
         .city-stat { display: flex; justify-content: space-between; margin-bottom: 1px;}
         @keyframes ping-map { 75%, 100% { transform: scale(2.5); opacity: 0; } }
         .animate-ping-map { animation: ping-map 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+        
         /* MOBILE RESPONSIVE - hanya untuk tampilan HP, tidak mengubah logika/data desktop */
         html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
         #root { width: 100%; max-width: 100%; overflow-x: hidden; }
@@ -64,6 +66,7 @@
             .text-3xl { font-size: 1.5rem !important; }
             .text-2xl { font-size: 1.25rem !important; }
         }
+        
         @media print {
             .no-print, header, .global-filters { display: none !important; }
             body { background-color: #fff !important; font-size: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -1810,17 +1813,24 @@
                 const stock = apiData.stock || [];
 
                 const kCode = ['item code', 'kode barang', 'material code'];
-                const kName = ['product name', 'nama produk'];
-                const kSales = ['sum of sales', 'sales', 'value', 'amount'];
+                const kName = ['product name', 'nama produk', 'material'];
+                const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total', 'net'];
                 const kHna = ['hna', 'harga dasar']; 
-                const kQty = ['qty', 'quantity'];
+                const kQty = ['qty', 'quantity', 'sum of qty', 'jumlah'];
                 const kStockValue = ['jumlah stock', 'stock unit', 'stock qty', 'stok', 'stock', 'sisa']; 
+                const kDist = ['distributor', 'dist', 'principal'];
 
                 let itemData = {};
 
                 target2026.forEach(r => {
-                    let code = getVal(r, kCode); let name = getVal(r, kName); if (!name && !code) return; 
-                    let dist = 'APL'; let targetMtd = 0; let targetYtd = 0; let targetFy = 0;
+                    let code = String(getVal(r, kCode) || '').trim(); 
+                    let name = String(getVal(r, kName) || code || '').trim().toUpperCase(); 
+                    if (!name) return; 
+                    
+                    let distRaw = String(getVal(r, kDist) || 'APL').toUpperCase();
+                    let dist = (distRaw.includes('APL') || distRaw.includes('ANUGERAH')) ? 'APL' : 'KFT';
+                    
+                    let targetMtd = 0; let targetYtd = 0; let targetFy = 0;
                     let blnRaw = getVal(r, ['bulan', 'month', 'bln']); let bln = parseInt(blnRaw);
                     
                     if (blnRaw && !isNaN(bln)) {
@@ -1838,18 +1848,24 @@
                          }
                     }
                     
-                    let key = dist + '_' + (name || code);
-                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
+                    let key = dist + '_' + name;
+                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
                     itemData[key].targetMtd += targetMtd; itemData[key].targetYtd += targetYtd; itemData[key].targetFy += targetFy;
                 });
 
                 sales2026.forEach(r => {
                     let bln = parseInt(getVal(r, ['bulan', 'month', 'bln'])); if(!bln || bln > m) return;
-                    let code = getVal(r, kCode); let name = getVal(r, kName); if (!name && !code) return;
-                    let dist = 'APL'; let salesVal = parseNum(getVal(r, kSales)); let salesQty = parseNum(getVal(r, kQty)); let hnaVal = parseNum(getVal(r, kHna));
+                    let code = String(getVal(r, kCode) || '').trim(); 
+                    let name = String(getVal(r, kName) || code || '').trim().toUpperCase(); 
+                    if (!name) return;
 
-                    let key = dist + '_' + (name || code);
-                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
+                    let distRaw = String(getVal(r, kDist) || 'APL').toUpperCase();
+                    let dist = (distRaw.includes('APL') || distRaw.includes('ANUGERAH')) ? 'APL' : 'KFT';
+                    
+                    let salesVal = parseNum(getVal(r, kSales)); let salesQty = parseNum(getVal(r, kQty)); let hnaVal = parseNum(getVal(r, kHna));
+
+                    let key = dist + '_' + name;
+                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
                     
                     itemData[key].ytdSalesRp += salesVal; itemData[key].ytdQty += salesQty;
                     if (bln === m) { itemData[key].mtdSalesRp += salesVal; itemData[key].mtdQty += salesQty; }
@@ -1857,11 +1873,17 @@
                 });
 
                 stock.forEach(r => {
-                    let code = getVal(r, kCode); let name = getVal(r, kName); if (!name && !code) return;
-                    let dist = 'APL'; let stockUnit = parseNum(getVal(r, kStockValue)); let hnaVal = parseNum(getVal(r, kHna));
+                    let code = String(getVal(r, kCode) || '').trim(); 
+                    let name = String(getVal(r, kName) || code || '').trim().toUpperCase(); 
+                    if (!name) return;
 
-                    let key = dist + '_' + (name || code);
-                    if(!itemData[key]) itemData[key] = { dist, code, name: name||code, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
+                    let distRaw = String(getVal(r, kDist) || 'APL').toUpperCase();
+                    let dist = (distRaw.includes('APL') || distRaw.includes('ANUGERAH')) ? 'APL' : 'KFT';
+
+                    let stockUnit = parseNum(getVal(r, kStockValue)); let hnaVal = parseNum(getVal(r, kHna));
+
+                    let key = dist + '_' + name;
+                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
 
                     itemData[key].stockUnit += stockUnit; if(hnaVal > 0) itemData[key].lastHna = hnaVal;
                 });
@@ -1891,7 +1913,7 @@
                     let estEOYValue = orderForEOY * estimatedPrice;
 
                     return { ...d, estimatedPrice, avgMonthlySalesUnit, scd, requiredStockUnit, status, color, stockValue, requiredStockValue, orderForEOY, estEOYValue };
-                }).sort((a,b) => b.scd - a.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetFy > 0);
+                }).sort((a,b) => b.scd - a.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetFy > 0 || d.ytdSalesRp > 0);
             }, [apiData, m, viewMode]);
 
             if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1901,9 +1923,9 @@
                 (searchProd === '' || String(r.name).toLowerCase().includes(searchProd.toLowerCase()))
             );
 
-            const fSum = { targetMtd: 0, targetYtd: 0, targetFy: 0, avgMonthlySalesUnit: 0, stockUnit: 0, stockVal: 0, reqUnit: 0, reqVal: 0, eoyUnit: 0, eoyVal: 0 };
+            const fSum = { targetMtd: 0, targetYtd: 0, ytdSalesRp: 0, targetFy: 0, avgMonthlySalesUnit: 0, stockUnit: 0, stockVal: 0, reqUnit: 0, reqVal: 0, eoyUnit: 0, eoyVal: 0 };
             filteredData.forEach(d => {
-                fSum.targetMtd += (d.targetMtd || 0); fSum.targetYtd += (d.targetYtd || 0); fSum.targetFy += (d.targetFy || 0);
+                fSum.targetMtd += (d.targetMtd || 0); fSum.targetYtd += (d.targetYtd || 0); fSum.ytdSalesRp += (d.ytdSalesRp || 0); fSum.targetFy += (d.targetFy || 0);
                 fSum.avgMonthlySalesUnit += (d.avgMonthlySalesUnit || 0); fSum.stockUnit += (d.stockUnit || 0);
                 fSum.stockVal += (d.stockValue || 0); fSum.reqUnit += (d.requiredStockUnit || 0); fSum.reqVal += (d.requiredStockValue || 0);
                 fSum.eoyUnit += (d.orderForEOY || 0); fSum.eoyVal += (d.estEOYValue || 0);
@@ -1938,7 +1960,7 @@
                                 <thead className="sticky top-0 shadow">
                                     <tr>
                                         <th>Dist</th><th>Nama Produk</th>
-                                        <th className="text-right">Target MTD (Rp)</th><th className="text-right">Target YTD (Rp)</th><th className="text-right">Target FY (Rp)</th>
+                                        <th className="text-right">Target MTD (Rp)</th><th className="text-right">Target YTD (Rp)</th><th className="text-right text-blue-800">Omset YTD (Rp)</th><th className="text-right">Target FY (Rp)</th>
                                         <th className="text-right">Avg Sales /Bln (Unit)</th><th className="text-right bg-blue-50">Stok Saat Ini (Unit)</th><th className="text-right bg-blue-50">Value Stok (Rp)</th>
                                         <th className="text-center">SCD</th><th className="text-center">Status</th>
                                         <th className="text-right bg-orange-50 text-red-700">Stok Kurang 60 Hr (Unit)</th><th className="text-right bg-orange-50 text-red-700">Value Kurang (Rp)</th><th className="text-right bg-green-50 text-green-800">Est Beli s/d Akhir Thn (Unit)</th>
@@ -1947,16 +1969,16 @@
                                 <tbody>
                                     <tr className="total-row !bg-yellow-300 sticky top-[30px] z-10 shadow-sm border-b-2 border-black">
                                         <td colSpan="2" className="text-left font-black uppercase text-sm">TOTAL GABUNGAN</td>
-                                        <td className="text-right font-black">{formatCurr(fSum.targetMtd)}</td><td className="text-right font-black">{formatCurr(fSum.targetYtd)}</td><td className="text-right font-black">{formatCurr(fSum.targetFy)}</td>
+                                        <td className="text-right font-black">{formatCurr(fSum.targetMtd)}</td><td className="text-right font-black">{formatCurr(fSum.targetYtd)}</td><td className="text-right font-black text-blue-800">{formatCurr(fSum.ytdSalesRp)}</td><td className="text-right font-black">{formatCurr(fSum.targetFy)}</td>
                                         <td className="text-right font-black text-gray-700">{formatCurr(fSum.avgMonthlySalesUnit)}</td><td className="text-right font-black text-blue-900">{formatCurr(fSum.stockUnit)}</td><td className="text-right font-black text-blue-900">{formatCurr(fSum.stockVal)}</td>
                                         <td colSpan="2" className="text-center font-black">-</td>
                                         <td className="text-right font-black text-red-700">{formatCurr(fSum.reqUnit)}</td><td className="text-right font-black text-red-700">{formatCurr(fSum.reqVal)}</td><td className="text-right font-black text-green-800">{formatCurr(fSum.eoyUnit)}</td>
                                     </tr>
-                                    {filteredData.length === 0 ? <tr><td colSpan="13" className="text-center py-4 text-gray-400">Tidak ada data untuk filter ini.</td></tr> : null}
+                                    {filteredData.length === 0 ? <tr><td colSpan="14" className="text-center py-4 text-gray-400">Tidak ada data untuk filter ini.</td></tr> : null}
                                     {filteredData.map((r, i) => (
                                         <tr key={i} className="hover:bg-gray-50">
                                             <td className="text-center font-bold text-blue-900">{r.dist}</td><td className="font-semibold">{r.name}</td>
-                                            <td className="text-right font-bold text-gray-700">{formatCurr(r.targetMtd)}</td><td className="text-right font-bold text-gray-700">{formatCurr(r.targetYtd)}</td><td className="text-right text-gray-600">{formatCurr(r.targetFy)}</td>
+                                            <td className="text-right font-bold text-gray-700">{formatCurr(r.targetMtd)}</td><td className="text-right font-bold text-gray-700">{formatCurr(r.targetYtd)}</td><td className="text-right font-bold text-blue-700">{formatCurr(r.ytdSalesRp)}</td><td className="text-right text-gray-600">{formatCurr(r.targetFy)}</td>
                                             <td className="text-right font-semibold">{formatCurr(r.avgMonthlySalesUnit)}</td><td className="text-right font-black bg-blue-50">{formatCurr(r.stockUnit)}</td><td className="text-right font-black bg-blue-50 text-blue-700">{formatCurr(r.stockValue)}</td>
                                             <td className={`text-center font-bold ${r.color}`}>{r.scd >= 999 ? '>999' : r.scd} Hari</td><td className={`text-center font-bold ${r.color}`}>{r.status}</td>
                                             <td className="text-right font-black bg-orange-50 text-red-700">{formatCurr(r.requiredStockUnit)}</td><td className="text-right font-black bg-orange-50 text-red-700">{formatCurr(r.requiredStockValue)}</td><td className="text-right font-black bg-green-50 text-green-700">{formatCurr(r.orderForEOY)}</td>
