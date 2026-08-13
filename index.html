@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Push Limits Dashboard</title>
+    <title>Push Limits Dashboard - Ultra AI Edition (Auto-Table)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #000; display: flex; flex-direction: column; min-height: 100vh; }
@@ -33,15 +34,27 @@
         .bg-2025 { background-color: #fde68a; }
         .bg-2026 { background-color: #fed7aa; }
         .bg-grand { background-color: #bbf7d0; font-weight: bold; }
-        .city-card { background: white; border: 1px solid #000; border-radius: 6px; overflow: hidden; display: flex; align-items: center; padding: 8px; box-shadow: 2px 2px 0px rgba(0,0,0,0.2); }
-        .city-logo { width: 60px; height: 60px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; margin-right: 12px; display:flex; justify-content:center; align-items:center; font-size: 24px;}
-        .city-info { flex: 1; font-size: 11px;}
-        .city-title { font-weight: 900; text-transform: uppercase; margin-bottom: 2px; border-bottom: 1px solid #000; padding-bottom: 2px; font-size: 12px;}
-        .city-stat { display: flex; justify-content: space-between; margin-bottom: 1px;}
-        @keyframes ping-map { 75%, 100% { transform: scale(2.5); opacity: 0; } }
-        .animate-ping-map { animation: ping-map 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
         
-        /* MOBILE RESPONSIVE - hanya untuk tampilan HP, tidak mengubah logika/data desktop */
+        /* Markdown Styling for AI - TABULAR ENHANCED */
+        .markdown-body { font-size: 13px; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 900; color: #1e3a8a; margin-top: 1.5em; margin-bottom: 0.5em; text-transform: uppercase; }
+        .markdown-body h1 { font-size: 1.5em; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; }
+        .markdown-body h2 { font-size: 1.25em; }
+        .markdown-body h3 { font-size: 1.1em; color: #4338ca; }
+        .markdown-body p { margin-bottom: 1em; line-height: 1.6; }
+        .markdown-body strong { color: #0f172a; font-weight: 800; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body li { margin-bottom: 0.25em; }
+        .markdown-body blockquote { border-left: 4px solid #f59e0b; padding-left: 1em; color: #475569; font-style: italic; background: #fffbeb; padding: 10px; border-radius: 4px; margin-bottom: 1em; }
+        
+        /* Tabel Rendering untuk AI */
+        .markdown-body table { width: 100%; border-collapse: collapse; margin-top: 1em; margin-bottom: 1.5em; font-size: 0.9em; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .markdown-body th, .markdown-body td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: left; vertical-align: top; }
+        .markdown-body th { background-color: #e0e7ff; font-weight: 900; color: #312e81; text-transform: uppercase; font-size: 0.85em; letter-spacing: 0.05em; }
+        .markdown-body tr:nth-child(even) { background-color: #f8fafc; }
+        .markdown-body tr:hover { background-color: #f1f5f9; }
+
+        /* MOBILE RESPONSIVE */
         html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
         #root { width: 100%; max-width: 100%; overflow-x: hidden; }
         @media (max-width: 767px) {
@@ -55,25 +68,15 @@
             .excel-table th, .excel-table td { padding: 3px 2px !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
             .npd-table th, .npd-table td { font-size: 7px !important; padding: 2px 1px !important; }
             .overflow-x-auto { overflow-x: hidden !important; max-width: 100% !important; }
-            .w-\[1200px\], .min-w-\[1000px\], .min-w-\[800px\] { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
-            .max-w-\[1400px\], .max-w-6xl { max-width: 100% !important; }
             .header-title { max-width: 100%; box-sizing: border-box; padding-left: 8px !important; padding-right: 8px !important; font-size: 11px !important; }
-            .city-card { min-width: 0 !important; }
-            .city-info { min-width: 0; }
-            .city-stat { gap: 4px; }
-            input, select, button { max-width: 100%; box-sizing: border-box; }
-            .text-4xl { font-size: 2rem !important; }
-            .text-3xl { font-size: 1.5rem !important; }
-            .text-2xl { font-size: 1.25rem !important; }
+            input, select, button, textarea { max-width: 100%; box-sizing: border-box; }
         }
         
         @media print {
             .no-print, header, .global-filters { display: none !important; }
             body { background-color: #fff !important; font-size: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .shadow-md, .shadow-sm { box-shadow: none !important; border: 1px solid #ccc !important; }
-            .overflow-y-auto, .max-h-[500px], .max-h-[600px], .max-h-[400px], .max-h-[220px], .max-h-36 { overflow: visible !important; max-height: none !important; }
-            .animate-ping-map { animation: none !important; }
-            table, .city-card { break-inside: avoid; }
+            table { break-inside: avoid; }
             tr { break-inside: avoid; break-after: auto; }
             main { max-width: 100% !important; margin: 0 !important; padding: 0 !important; flex: none; }
         }
@@ -86,7 +89,20 @@
         const Recharts = window.Recharts || {};
         const { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } = Recharts;
 
+        // URL GOOGLE SCRIPT ANDA
         const API_URL = 'https://script.google.com/macros/s/AKfycbyyn_npH0wGFZsd4WgxrYXK2OnUrWVeA5nEX4_qybbxg9y1slR4v8QexRJBUDqh7_YQ/exec';
+        
+        // API KEY GEMINI
+        const GEMINI_API_KEY = "AQ.Ab8RN6Lov2BB0btdMffkwNTSOUMH40zgNvXjDfhT-hpORBnhvA";
+
+        // Global Context (Organisasi)
+        const ORG_CONTEXT = `Konteks Struktur Tim & Otoritas:
+- Anda bertindak sebagai analis/advisor untuk DM (District Manager) area Jayapura.
+- Sales APL: Distributor utama.
+- PSR (Marketing): Menghandle distributor KFTD.
+- MD (Merchandiser): 1 di Jayapura, 1 di Sorong.
+- Koordinasi Lintas Dept: Trade Marketing, Brand Marketing, LAM (Local Area Marketing), Finance.
+Selalu sebutkan PIC eksekusi dari daftar tim ini secara realistis.`;
 
         class ErrorBoundary extends Component {
             constructor(props) { super(props); this.state = { hasError: false, error: null }; }
@@ -135,8 +151,7 @@
                     filename: `Dashboard_${menuName.replace(/ /g, '_')}_${new Date().getTime()}.pdf`,
                     image: { type: 'jpeg', quality: 0.95 },
                     html2canvas: { scale: 2, useCORS: true, backgroundColor: '#f1f5f9', logging: false, ignoreElements: (el) => el.classList.contains('no-print') },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true },
-                    pagebreak: { mode: ['css', 'legacy'] }
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true }
                 }).from(mainElement).save();
             } catch (err) {
                 console.error("Gagal men-download PDF:", err);
@@ -230,18 +245,252 @@
             );
         };
 
+        /* ==========================================
+           KOMPONEN AI GENERATOR MULTI-TAB (AUTO-RUN)
+           ========================================== */
+        const TabAIPanel = ({ title, contextData, systemInstruction, autoRun = false }) => {
+            const [analysis, setAnalysis] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [errorMsg, setErrorMsg] = useState("");
+            const hasRun = useRef(false);
+
+            const analyzeData = async () => {
+                setLoading(true);
+                setErrorMsg("");
+                setAnalysis("");
+                
+                const currentWITA = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jayapura', dateStyle: 'full', timeStyle: 'long' });
+
+                const prompt = `Anda adalah seorang Lead Business Analyst yang sangat analitis. Hasilkan analisa ringkas dan tajam (Strategic Advice) berdasarkan data berikut.
+
+Waktu Analisis (Waktu Indonesia Timur): ${currentWITA}
+${ORG_CONTEXT}
+
+FAKTA DATA TAB INI:
+${contextData}
+
+INSTRUKSI KHUSUS ANALISA INI:
+${systemInstruction}
+
+ATURAN FORMATTING (SANGAT PENTING):
+- Gunakan bahasa Indonesia profesional, *to the point*. 
+- **SAJIKAN POIN UTAMA, AKAR MASALAH, ACTION PLAN, PIC, DAN TIMELINE KE DALAM BENTUK TABEL MARKDOWN YANG RAPI.**
+- Jangan mengarang/berhalusinasi data angka. 
+- Gunakan prinsip: "What happened → Why it happened → Why it matters → What action will change the result".`;
+
+                const modelsToTry = ['gemini-3.6-flash', 'gemini-1.5-flash'];
+                let success = false;
+                let errorDetails = [];
+
+                for (const model of modelsToTry) {
+                    if (success) break;
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY.trim()}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok && data.candidates && data.candidates.length > 0) {
+                            setAnalysis(data.candidates[0].content.parts[0].text);
+                            success = true;
+                        } else if (data.error) {
+                            errorDetails.push(`[${model}] Ditolak: ${data.error.message}`);
+                        }
+                    } catch (error) {
+                        errorDetails.push(`[${model}] Network Error: ${error.message}`);
+                    }
+                }
+
+                if (!success) {
+                    const errorString = errorDetails.join(' ');
+                    if (errorString.toLowerCase().includes('high demand') || errorString.toLowerCase().includes('quota') || errorString.includes('429') || errorString.includes('503')) {
+                        setErrorMsg("⚠️ Server AI Google saat ini sedang antre/penuh (High Demand). Spikes in demand are temporary. \n\nSolusi: Silakan tunggu sekitar 30 detik, lalu klik tombol 'Refresh Analisa' kembali.");
+                    } else {
+                        setErrorMsg(`Peringatan Akses API Google:\n\n${errorDetails.join('\n')}`);
+                    }
+                }
+                
+                setLoading(false);
+            };
+
+            useEffect(() => {
+                if (autoRun && contextData && !hasRun.current) {
+                    hasRun.current = true;
+                    analyzeData();
+                }
+            }, [autoRun, contextData]);
+
+            return (
+                <div className="bg-indigo-50 border-2 border-indigo-200 p-4 rounded-lg shadow-sm mb-6 w-full no-print">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-3 gap-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl text-pink-500">🧠</span>
+                            <h3 className="font-black text-indigo-900 text-sm uppercase tracking-wide">{title}</h3>
+                        </div>
+                        <button onClick={analyzeData} disabled={loading} className={`px-4 py-1.5 rounded font-bold text-xs shadow text-white transition-all ${loading ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                            {loading ? '⏳ Menganalisa Data...' : '🔄 Refresh Analisa'}
+                        </button>
+                    </div>
+
+                    {errorMsg && (
+                        <div className="p-4 bg-red-100 border-2 border-red-300 rounded text-red-800 text-xs font-semibold whitespace-pre-wrap mt-3 shadow-inner">
+                            {errorMsg}
+                        </div>
+                    )}
+
+                    {loading && !analysis && !errorMsg && (
+                         <div className="mt-4 p-8 bg-white border border-indigo-100 rounded shadow-inner text-center">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent mb-4"></div>
+                            <p className="text-sm font-bold text-indigo-800">AI Sedang Menyusun Laporan Otomatis...</p>
+                         </div>
+                    )}
+
+                    {analysis && (
+                        <div className="mt-4 p-4 bg-white border border-indigo-100 rounded shadow-inner text-sm text-gray-800 markdown-body animate-fade-in"
+                             dangerouslySetInnerHTML={{ __html: marked.parse(analysis) }}>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        /* KOMPONEN AI GEMINI UNTUK EXECUTIVE SUMMARY (TAB 1) */
+        const GeminiAnalysisView = ({ apiData, month }) => {
+            const [analysis, setAnalysis] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [competitorNote, setCompetitorNote] = useState("");
+            const [errorMsg, setErrorMsg] = useState("");
+            
+            const getDynamicContext = () => {
+                if (!apiData) return "Data tidak tersedia.";
+                let t_mtd = 0, s_mtd = 0, s_mtd_ly = 0;
+                const m = parseInt(month) || 1;
+                
+                (apiData.target2026 || []).forEach(r => {
+                    let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota']));
+                    let blnRaw = getVal(r, ['bulan', 'month', 'bln']);
+                    if (blnRaw) { if (parseInt(blnRaw) === m) t_mtd += val; } 
+                    else { t_mtd += parseNum(getVal(r, [`quota ${m}`, `target ${m}`])); }
+                });
+                
+                (apiData.sales2026 || []).forEach(r => {
+                    let bln = parseInt(getVal(r, ['bulan', 'month', 'bln']));
+                    if(bln === m) s_mtd += parseNum(getVal(r, ['sum of sales', 'sales', 'value', 'amount']));
+                });
+
+                (apiData.sales2025 || []).forEach(r => {
+                    let bln = parseInt(getVal(r, ['bulan', 'month', 'bln']));
+                    if(bln === m) s_mtd_ly += parseNum(getVal(r, ['sum of sales', 'sales', 'value', 'amount']));
+                });
+
+                const ach = getP(s_mtd, t_mtd);
+                const grw = calcGrowth(s_mtd, s_mtd_ly);
+                
+                return `[FAKTA DATA BULAN ${m}]: Target MTD: Rp ${formatCurr(t_mtd)}, Sales Pencapaian MTD: Rp ${formatCurr(s_mtd)} (Ach: ${ach}%), Growth vs Tahun Lalu: ${grw}%.`;
+            };
+
+            const analyzeData = async () => {
+                setLoading(true); setErrorMsg(""); setAnalysis("");
+                const dynamicData = getDynamicContext();
+                const currentWITA = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jayapura', dateStyle: 'full', timeStyle: 'long' });
+
+                const prompt = `Anda adalah seorang Lead Business Analyst. Berdasarkan performa bisnis di bulan ${month}, hasilkan sebuah Memorandum Internal (Business Review) yang objektif, berwawasan luas, dan langsung pada intinya.
+
+Waktu Pembuatan Laporan (WITA): ${currentWITA}
+
+${dynamicData}
+${ORG_CONTEXT}
+
+Wajib Gunakan Framework Berikut Secara Berurutan:
+1. "What happened" (Apa yang terjadi dengan pencapaian target berdasarkan data di atas?)
+2. "Why it happened" (Apa kemungkinan akar permasalahannya?)
+3. "Why it matters" (Apa implikasi bisnis dari kejadian tersebut jika dibiarkan?)
+4. "What action will change the result" (Tindakan konkrit apa yang akan mengubah hasil?)
+
+Selain itu, sertakan:
+- External & Competitive Insights: Masukkan catatan lapangan berikut -> "${competitorNote || 'Tidak ada ancaman kompetitor spesifik yang dominan bulan ini.'}"
+
+ATURAN FORMATTING TABEL WAJIB:
+Sajikan "Top 3 Priorities" ke dalam bentuk TABEL MARKDOWN dengan kolom: [Prioritas] | [What Action] | [Expected Result] | [PIC] | [Timeline & Escalation].`;
+
+                const modelsToTry = ['gemini-3.6-flash', 'gemini-1.5-flash'];
+                let success = false; let errorDetails = [];
+
+                for (const model of modelsToTry) {
+                    if (success) break;
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY.trim()}`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+                        const data = await response.json();
+                        if (response.ok && data.candidates && data.candidates.length > 0) {
+                            setAnalysis(data.candidates[0].content.parts[0].text); success = true;
+                        } else if (data.error) { errorDetails.push(`[${model}] Ditolak: ${data.error.message}`); }
+                    } catch (error) { errorDetails.push(`[${model}] Network Error: ${error.message}`); }
+                }
+
+                if (!success) {
+                    const errorString = errorDetails.join(' ');
+                    if (errorString.toLowerCase().includes('high demand') || errorString.toLowerCase().includes('quota') || errorString.includes('429') || errorString.includes('503')) {
+                        setErrorMsg("⚠️ Server AI Google saat ini sedang antre/penuh (High Demand). Spikes in demand are temporary. \n\nSolusi: Silakan tunggu sekitar 30 detik, lalu klik tombol 'Generate Analisa Sekarang' kembali.");
+                    } else {
+                        setErrorMsg(`Peringatan Akses API Google:\n\n${errorDetails.join('\n')}`);
+                    }
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="p-4 sm:p-6 bg-white rounded-lg shadow-sm border border-indigo-200 w-full">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 mb-6 border-b border-indigo-100 pb-4">
+                        <div className="bg-indigo-600 text-white p-3 rounded-full text-xl shadow">🤖</div>
+                        <div>
+                            <h3 className="font-black text-indigo-900 text-lg">Executive Smart Analysis (Powered by Gemini)</h3>
+                            <p className="text-xs font-semibold text-gray-500 mt-1">Sesuai arahan Memo: <i>"What happened → Why it happened → Why it matters → What action will change the result"</i></p>
+                        </div>
+                    </div>
+                    
+                    <div className="mb-6">
+                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">🔍 Tambahkan Market & Competitive Insights (Opsional):</label>
+                        <textarea className="w-full border border-gray-300 rounded p-3 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none transition shadow-sm" rows="3" placeholder="Contoh: Kompetitor X meluncurkan promo buy 1 get 1..." value={competitorNote} onChange={(e) => setCompetitorNote(e.target.value)}></textarea>
+                    </div>
+                    
+                    <button onClick={analyzeData} disabled={loading} className={`w-full sm:w-auto font-black px-8 py-3 rounded shadow-md transition-all ${loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:-translate-y-0.5'}`}>
+                        {loading ? '⏳ Menyusun Laporan Eksekutif...' : '✨ Generate Analisa Sekarang'}
+                    </button>
+                    
+                    {errorMsg && (
+                        <div className="mt-6 p-4 bg-red-100 border-2 border-red-300 rounded text-red-800 text-xs sm:text-sm font-semibold whitespace-pre-wrap shadow-inner">{errorMsg}</div>
+                    )}
+
+                    {analysis && (
+                        <div className="mt-8 animate-fade-in">
+                            <h4 className="text-sm font-black text-indigo-800 uppercase mb-3 border-b border-indigo-200 pb-2">📑 Hasil Analisa Business Review</h4>
+                            <div className="p-6 bg-slate-50 border border-indigo-100 rounded shadow-inner text-sm text-gray-800 leading-relaxed markdown-body" dangerouslySetInnerHTML={{ __html: marked.parse(analysis) }} />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         const BusinessReviewParentView = ({ apiData, globalMonth }) => {
             const [brTab, setBrTab] = useState('presentasi'); 
             const [presenterOutlet, setPresenterOutlet] = useState('');
             return (
                 <div className="w-full animate-fade-in">
-                    <div className="flex bg-blue-900 text-white rounded-t-lg overflow-hidden no-print">
-                        <button onClick={() => setBrTab('presentasi')} className={`flex-1 py-2 font-bold text-xs sm:text-sm ${brTab === 'presentasi' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>PRESENTASI BR</button>
-                        <button onClick={() => setBrTab('oht')} className={`flex-1 py-2 font-bold text-xs sm:text-sm ${brTab === 'oht' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>OHT MONITOR</button>
-                        <button onClick={() => setBrTab('pht')} className={`flex-1 py-2 font-bold text-xs sm:text-sm ${brTab === 'pht' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>PHT MONITOR</button>
+                    <div className="flex bg-blue-900 text-white rounded-t-lg overflow-hidden no-print flex-wrap">
+                        <button onClick={() => setBrTab('presentasi')} className={`flex-1 py-3 px-2 font-bold text-[10px] sm:text-sm transition-colors ${brTab === 'presentasi' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>PRESENTASI BR</button>
+                        <button onClick={() => setBrTab('ai_analysis')} className={`flex-1 py-3 px-2 font-bold text-[10px] sm:text-sm transition-colors flex justify-center items-center gap-1 sm:gap-2 ${brTab === 'ai_analysis' ? 'bg-indigo-600' : 'hover:bg-blue-800'}`}><span>EXECUTIVE AI</span><span className="bg-yellow-400 text-black text-[9px] px-1 rounded-sm">PRO</span></button>
+                        <button onClick={() => setBrTab('oht')} className={`flex-1 py-3 px-2 font-bold text-[10px] sm:text-sm transition-colors ${brTab === 'oht' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>OHT MONITOR</button>
+                        <button onClick={() => setBrTab('pht')} className={`flex-1 py-3 px-2 font-bold text-[10px] sm:text-sm transition-colors ${brTab === 'pht' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>PHT MONITOR</button>
                     </div>
                     <div className="bg-white border-x border-b border-gray-300 rounded-b-lg p-2 sm:p-4 shadow-sm">
                         {brTab === 'presentasi' && <OutletPresenterView apiData={apiData} month={globalMonth} selectedOutlet={presenterOutlet} onSelectOutlet={setPresenterOutlet} />}
+                        {brTab === 'ai_analysis' && <GeminiAnalysisView apiData={apiData} month={globalMonth} />}
                         {brTab === 'oht' && <OHTMonitoringView apiData={apiData} month={globalMonth} />}
                         {brTab === 'pht' && <PHTMonitoringView apiData={apiData} month={globalMonth} />}
                     </div>
@@ -344,6 +593,8 @@
 
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
+            const aiContext = outletData ? `Outlet: ${selectedOutlet}. Target MTD: Rp ${formatCurr(outletData.targetMTD)}, Pencapaian MTD 2026: Rp ${formatCurr(outletData.totMtd26)} (${getP(outletData.totMtd26, outletData.targetMTD)}%). MTD 2025: Rp ${formatCurr(outletData.totMtd25)}. Produk lost MTD: ${outletData.skuArr.filter(r=>r.mtd25>0 && r.mtd26===0).map(r=>r.name).join(', ')}` : '';
+
             return (
                 <div className="space-y-6 pb-12 w-full max-w-6xl mx-auto">
                     <div className="bg-[#0f172a] p-4 sm:p-6 rounded-xl shadow-lg border border-blue-900 text-center relative no-print z-30">
@@ -385,6 +636,13 @@
                         </div>
                     ) : (
                         <div className="space-y-6 w-full">
+                            <TabAIPanel 
+                                title={`AI Diagnosis: Outlet ${selectedOutlet}`}
+                                contextData={aiContext}
+                                systemInstruction={`Tinjau performa outlet ini. Jika ada produk lost (dibeli tahun lalu tapi tidak tahun ini), jadikan fokus "Why it happened" dan berikan saran penawaran (What action). WAJIB output dalam BENTUK TABEL Markdown.`}
+                                autoRun={true}
+                            />
+                            
                             <div className="text-center print:block">
                                 <h1 className="text-xl sm:text-3xl font-black text-blue-900 uppercase underline decoration-yellow-400 decoration-4 underline-offset-8">{selectedOutlet === 'ALL (KESELURUHAN PAPUA)' ? 'KESELURUHAN PAPUA (ALL OUTLETS)' : selectedOutlet}</h1>
                                 <p className="text-xs sm:text-sm text-gray-500 font-semibold mt-3">Business Review Report - MTD/YTD {outletData.mName} 2026</p>
@@ -979,8 +1237,17 @@
             };
             chanGrandTot.avgGrwt = calcGrowth(chanGrandTot.avgYtd26, chanGrandTot.avg25); chanGrandTot.ytdGrwt = calcGrowth(chanGrandTot.y26, chanGrandTot.y25); chanGrandTot.mtdGrwt = calcGrowth(chanGrandTot.mtd26, chanGrandTot.mtd25);
 
+            const aiContext = `Total MTD Ach: ${getP(mTot.a, mTot.q)}%. Total YTD Ach: ${getP(yTot.a, yTot.q)}%. Growth YTD: ${calcGrowth(yTot.a, y25Tot.ytd)}%. Divisi Minus (YTD): ${chg.arr.concat(phg.arr).filter(d=>d.ytdGrwt<0).map(d=>d.div).join(', ')}. Channel Minus (YTD): ${chanAllArr.filter(d=>d.ytdGrwt<0).map(d=>d.cluster).join(', ')}.`;
+
             return (
                 <div className="space-y-4 animate-fade-in pb-8 w-full">
+                    <TabAIPanel 
+                        title="AI Analysis: Performa Sales & Channel"
+                        contextData={aiContext}
+                        systemInstruction="Fokuskan analisa pada pencapaian YTD. Jika ada divisi atau channel yang minus, gali 'Why it happened' secara tajam. Berikan Top 3 Priorities untuk push sales pada divisi/channel yang tertinggal. SAJIKAN DALAM BENTUK TABEL MARKDOWN."
+                        autoRun={true}
+                    />
+
                     <div className="flex justify-end items-center gap-2 px-4 no-print">
                         <span className="text-xs font-bold text-gray-700 uppercase">View Mode:</span>
                         <div className="flex bg-gray-200 rounded p-1">
@@ -1092,126 +1359,6 @@
             );
         };
 
-        const SummaryView = ({ apiData, month }) => {
-            const summaryData = useMemo(() => {
-                if (!apiData) return null;
-                const target2026 = apiData.target2026 || []; const sales2026 = apiData.sales2026 || []; const sales2025 = apiData.sales2025 || [];
-                const m = parseInt(month) || 1; const projM = m < 12 ? m + 1 : 12; 
-                const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                const mName = mNames[m-1]; const projMName = mNames[projM-1];
-
-                const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total']; const kBulan = ['bulan', 'month', 'bln'];
-                const kBiz = ['business', 'bisnis', 'type', 'bussines']; const kDiv = ['division', 'divisi', 'div', 'departemen'];
-                const kBrand = ['brand', 'sub_brand', 'sub brand']; const kChan = ['cluster', 'channel', 'grup', 'tipe outlet'];
-                const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust', 'outlet'];
-
-                let dMap = { biz: { PHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 }, CHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 } }, cluster: {}, brand: {}, outlet: {} };
-
-                target2026.forEach(r => {
-                    let biz = detectBizType(r); if(biz==='UNKNOWN') return;
-                    let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota'])); let blnRaw = getVal(r, kBulan);
-                    if (blnRaw) { let bln = parseInt(blnRaw); if (bln === projM) dMap.biz[biz].q_projM += val; dMap.biz[biz].q_fy += val; } 
-                    else {
-                        dMap.biz[biz].q_projM += parseNum(getVal(r, [`quota ${projMName.toLowerCase()}`]));
-                        for(let i=0; i<12; i++) dMap.biz[biz].q_fy += parseNum(getVal(r, [`quota ${mNames[i].toLowerCase()}`]));
-                    }
-                });
-
-                sales2026.forEach(r => {
-                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                    let biz = detectBizType(r); let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase(); let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase(); let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase(); let sales = parseNum(getVal(r, kSales));
-                    if(dMap.biz[biz]) { if(bln === m) dMap.biz[biz].a_mtd += sales; if(bln <= m) dMap.biz[biz].ytd26_m += sales; }
-                    if(bln <= m) {
-                        if(brand && brand !== 'UNASSIGNED' && brand !== '') { if(!dMap.brand[brand]) dMap.brand[brand] = { y26: 0, y25_m: 0 }; dMap.brand[brand].y26 += sales; }
-                        if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED' && chan !== '') { if(!dMap.cluster[chan]) dMap.cluster[chan] = { y26: 0, y25_m: 0 }; dMap.cluster[chan].y26 += sales; }
-                        if(outlet && outlet !== 'UNASSIGNED' && outlet !== 'UNDEFINED' && outlet !== '') { if(!dMap.outlet[outlet]) dMap.outlet[outlet] = { y26: 0, y25_m: 0 }; dMap.outlet[outlet].y26 += sales; }
-                    }
-                });
-
-                sales2025.forEach(r => {
-                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                    let biz = detectBizType(r); let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase(); let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase(); let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase(); let sales = parseNum(getVal(r, kSales));
-                    if(dMap.biz[biz]) { dMap.biz[biz].a25_fy += sales; if(bln <= m) dMap.biz[biz].ytd25_m += sales; }
-                    if(brand && brand !== 'UNASSIGNED' && brand !== '') { if(!dMap.brand[brand]) dMap.brand[brand] = { y26: 0, y25_m: 0 }; if(bln <= m) dMap.brand[brand].y25_m += sales; }
-                    if(chan && chan !== 'UNASSIGNED' && chan !== 'UNDEFINED' && chan !== '') { if(!dMap.cluster[chan]) dMap.cluster[chan] = { y26: 0, y25_m: 0 }; if(bln <= m) dMap.cluster[chan].y25_m += sales; }
-                    if(outlet && outlet !== 'UNASSIGNED' && outlet !== 'UNDEFINED' && outlet !== '') { if(!dMap.outlet[outlet]) dMap.outlet[outlet] = { y26: 0, y25_m: 0 }; if(bln <= m) dMap.outlet[outlet].y25_m += sales; }
-                });
-
-                let rawChgEst = dMap.biz.CHG.ytd26_m > 0 ? (dMap.biz.CHG.ytd26_m / m) : 0; let rawPhgEst = dMap.biz.PHG.ytd26_m > 0 ? (dMap.biz.PHG.ytd26_m / m) : 0; 
-                let rawTotalEst = rawChgEst + rawPhgEst; let totalQProj = dMap.biz.CHG.q_projM + dMap.biz.PHG.q_projM;
-                let rawTotalAchEst = getP(rawTotalEst, totalQProj); let multiplier = 1;
-                if (rawTotalAchEst < 95 && totalQProj > 0) { let minimumRequiredEst = (95 / 100) * totalQProj; multiplier = minimumRequiredEst / rawTotalEst; }
-
-                const calcProjection = (bz, rawEst) => {
-                    const data = dMap.biz[bz]; const est = rawEst * multiplier; const achEst = getP(est, data.q_projM);
-                    const avgYtdEst26 = (data.ytd26_m + est) / projM; const avg25 = data.a25_fy / 12;
-                    const grwtAvg = calcGrowth(avgYtdEst26, avg25); const grwtYtd = calcGrowth(data.ytd26_m, data.ytd25_m);
-                    return { bz, q_projM: data.q_projM, est, achEst, grwtAvg, grwtYtd };
-                };
-
-                const chgProj = calcProjection('CHG', rawChgEst); const phgProj = calcProjection('PHG', rawPhgEst);
-                const totalEst = chgProj.est + phgProj.est; const totalAchEst = getP(totalEst, totalQProj);
-                const totalCurrComb = (dMap.biz.CHG.ytd26_m + chgProj.est) + (dMap.biz.PHG.ytd26_m + phgProj.est); const totalPrevComb = (dMap.biz.CHG.a25_fy + dMap.biz.PHG.a25_fy) / 12;
-                const totalGrwtAvg = calcGrowth(totalCurrComb / projM, totalPrevComb);
-                const totalYtd26_m = dMap.biz.CHG.ytd26_m + dMap.biz.PHG.ytd26_m; const totalYtd25_m = dMap.biz.CHG.ytd25_m + dMap.biz.PHG.ytd25_m;
-                const totalGrwtYtd = calcGrowth(totalYtd26_m, totalYtd25_m);
-
-                const bizEval = [chgProj, phgProj].filter(b => b.grwtAvg < 0 || b.grwtYtd < 0);
-                const clusterEval = Object.keys(dMap.cluster).map(k => { let d = dMap.cluster[k]; return { name: k, grwt: calcGrowth(d.y26, d.y25_m) }; }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
-                const brandEval = Object.keys(dMap.brand).map(k => { let d = dMap.brand[k]; return { name: k, grwt: calcGrowth(d.y26, d.y25_m) }; }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
-                const outletEval = Object.keys(dMap.outlet).map(k => { let d = dMap.outlet[k]; return { name: k, grwt: calcGrowth(d.y26, d.y25_m), y25_m: d.y25_m }; }).filter(d => d.grwt < 0 && d.y25_m > 0).sort((a,b) => a.grwt - b.grwt);
-
-                return { chgProj, phgProj, totalQProj, totalEst, totalAchEst, totalGrwtAvg, totalGrwtYtd, bizEval, clusterEval, brandEval, outletEval, mName, projMName };
-            }, [apiData, month]);
-
-            if (!apiData || !summaryData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
-
-            return (
-                <div className="space-y-6 animate-fade-in pb-12 w-full">
-                    <div className="bg-white p-6 border shadow-md w-full">
-                        <div className="text-center mb-6">
-                            <h2 className="header-title !text-xl !px-12">PROJECTION & ESTIMATION FOR {summaryData.projMName.toUpperCase()} 2026</h2>
-                            <p className="text-xs text-gray-500 font-semibold italic">Based on Selected Month: <b>{summaryData.mName} 2026</b> | Projection Month: <b>{summaryData.projMName} 2026</b></p>
-                        </div>
-                        <table className="excel-table w-full max-w-5xl mx-auto mb-8">
-                            <thead>
-                                <tr><th className="text-left text-sm py-2">Business Type</th><th className="text-right text-sm py-2">Sum of Quota {summaryData.projMName}</th><th className="text-right text-sm py-2">EST {summaryData.projMName}</th><th className="text-center text-sm py-2">% Ach Est</th><th className="text-center text-sm py-2">Growth Avg ({summaryData.mName}+{summaryData.projMName})</th><th className="text-center text-sm py-2">Growth YTD ({summaryData.mName})</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr><td className="text-left font-bold text-sm py-2">CHG</td><td className="text-right font-semibold text-sm py-2">{formatCurr(summaryData.chgProj.q_projM)}</td><td className="text-right font-semibold text-sm py-2">{formatCurr(summaryData.chgProj.est)}</td><td className={`text-center font-bold text-sm py-2 ${cAch(summaryData.chgProj.achEst)}`}>{summaryData.chgProj.achEst}%</td><td className={`text-center font-bold text-sm py-2 ${cGrw(summaryData.chgProj.grwtAvg)}`}>{fGrw(summaryData.chgProj.grwtAvg)}</td><td className={`text-center font-bold text-sm py-2 ${cGrw(summaryData.chgProj.grwtYtd)}`}>{fGrw(summaryData.chgProj.grwtYtd)}</td></tr>
-                                <tr><td className="text-left font-bold text-sm py-2">PHG</td><td className="text-right font-semibold text-sm py-2">{formatCurr(summaryData.phgProj.q_projM)}</td><td className="text-right font-semibold text-sm py-2">{formatCurr(summaryData.phgProj.est)}</td><td className={`text-center font-bold text-sm py-2 ${cAch(summaryData.phgProj.achEst)}`}>{summaryData.phgProj.achEst}%</td><td className={`text-center font-bold text-sm py-2 ${cGrw(summaryData.phgProj.grwtAvg)}`}>{fGrw(summaryData.phgProj.grwtAvg)}</td><td className={`text-center font-bold text-sm py-2 ${cGrw(summaryData.phgProj.grwtYtd)}`}>{fGrw(summaryData.phgProj.grwtYtd)}</td></tr>
-                                <tr className="total-row"><td className="text-left font-black text-sm py-2">Total</td><td className="text-right font-black text-sm py-2">{formatCurr(summaryData.totalQProj)}</td><td className="text-right font-black text-sm py-2">{formatCurr(summaryData.totalEst)}</td><td className={`text-center font-black text-sm py-2 ${cAch(summaryData.totalAchEst)}`}>{summaryData.totalAchEst}%</td><td className={`text-center font-black text-sm py-2 ${cGrw(summaryData.totalGrwtAvg)}`}>{fGrw(summaryData.totalGrwtAvg)}</td><td className={`text-center font-black text-sm py-2 ${cGrw(summaryData.totalGrwtYtd)}`}>{fGrw(summaryData.totalGrwtYtd)}</td></tr>
-                            </tbody>
-                        </table>
-                        <div className="bg-red-50 border-2 border-red-300 p-6 rounded-lg max-w-5xl mx-auto shadow-sm w-full">
-                            <h3 className="text-red-800 font-black text-lg mb-3 border-b border-red-200 pb-2 flex items-center gap-2"><span>🚨</span> EXECUTIVE EVALUATION (SUMMARY NEGATIVE PERFORMANCE DECLINE)</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4 w-full">
-                                <div className="bg-white p-3 border border-red-200 rounded">
-                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Business Type Minus:</h4>
-                                    {summaryData.bizEval.length === 0 ? <p className="text-xs text-green-600 font-semibold">Semua Business Type Positif.</p> : <ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">{summaryData.bizEval.map((b, i) => <li key={i}>{b.bz}: Avg <span className="text-red-600">{b.grwtAvg}%</span> | YTD <span className="text-red-600">{b.grwtYtd}%</span></li>)}</ul>}
-                                </div>
-                                <div className="bg-white p-3 border border-red-200 rounded">
-                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Cluster / Channel Minus:</h4>
-                                    {summaryData.clusterEval.length === 0 ? <p className="text-xs text-green-600 font-semibold">Semua Cluster/Channel Positif.</p> : <div className="max-h-36 overflow-y-auto pr-1"><ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">{summaryData.clusterEval.map((c, i) => <li key={i}>{c.name}: <span className="float-right text-red-600">{c.grwt}%</span></li>)}</ul></div>}
-                                </div>
-                                <div className="bg-white p-3 border border-red-200 rounded">
-                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Sub Brand / Brand Minus:</h4>
-                                    {summaryData.brandEval.length === 0 ? <p className="text-xs text-green-600 font-semibold">Semua Sub Brand Positif.</p> : <div className="max-h-36 overflow-y-auto pr-1"><ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">{summaryData.brandEval.map((b, i) => <li key={i}>{b.name}: <span className="float-right text-red-600">{b.grwt}%</span></li>)}</ul></div>}
-                                </div>
-                                <div className="bg-white p-3 border border-red-200 rounded">
-                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Outlet Minus:</h4>
-                                    {summaryData.outletEval.length === 0 ? <p className="text-xs text-green-600 font-semibold">Semua Outlet Positif.</p> : <div className="max-h-36 overflow-y-auto pr-1"><ul className="list-disc pl-4 text-[10px] text-red-700 font-bold space-y-1">{summaryData.outletEval.map((o, i) => <li key={i} className="border-b border-red-50 pb-1 mb-1">{o.name}: <span className="float-right text-red-600">{o.grwt}%</span></li>)}</ul></div>}
-                                </div>
-                            </div>
-                            <div className="mt-4 pt-3 border-t border-red-200 bg-red-100/50 p-3 rounded text-xs text-red-900 leading-relaxed font-semibold">
-                                <b>GARIS BESAR EVALUASI:</b><br/>Ditinjau dari data hingga bulan {summaryData.mName} 2026, terdapat <b>{summaryData.bizEval.length} Business Type</b>, <b>{summaryData.clusterEval.length} Cluster</b>, <b>{summaryData.brandEval.length} Sub Brand</b>, dan <b>{summaryData.outletEval.length} Outlet</b> yang mengalami pertumbuhan minus (decline). Prioritas aksi mendesak difokuskan pada pemulihan sales di segmen minus tersebut guna memastikan pencapaian target estimasi bulan {summaryData.projMName} 2026 sebesar <b>Rp {formatCurr(summaryData.totalEst)}</b> tercapai secara optimal.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
         const ParetoBrandView = ({ apiData, month }) => {
             const [selectedDist, setSelectedDist] = useState('ALL');
             const [viewMode, setViewMode] = useState('YTD'); 
@@ -1271,8 +1418,17 @@
 
             if (!apiData || !paretoData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
+            const aiContext = `Top 3 Brand CHG yang minus (jika ada): ${paretoData.chg.filter(d=>d.ytdGrwt<0).slice(0,3).map(d=>d.brand).join(', ')}. Top 3 Brand PHG yang minus: ${paretoData.phg.filter(d=>d.ytdGrwt<0).slice(0,3).map(d=>d.brand).join(', ')}.`;
+
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
+                    <TabAIPanel 
+                        title="AI Analysis: Pareto Brand Dependency"
+                        contextData={aiContext}
+                        systemInstruction="Fokus pada Brand Pareto (Top 10 penyumbang terbesar). Jika ada brand top yang mengalami minus (Growth Negatif), jelaskan mengapa ini sangat berbahaya ('Why it matters') karena akan menyeret seluruh pencapaian perusahaan. Berikan action plan untuk memulihkan brand tersebut. WAJIB output dalam BENTUK TABEL Markdown."
+                        autoRun={true}
+                    />
+
                     <div className="bg-slate-50 p-4 border border-gray-300 rounded-lg flex flex-wrap gap-4 items-center no-print">
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-gray-700 uppercase">Distributor:</span>
@@ -1327,110 +1483,6 @@
                                 ))}
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            );
-        };
-
-        const CityView = ({ apiData, month }) => {
-            const [viewMode, setViewMode] = useState('YTD'); 
-            const cMapData = useMemo(() => {
-                if (!apiData) return null;
-                const sales2026 = apiData.sales2026 || [];
-                const sales2025 = apiData.sales2025 || [];
-                const m = parseInt(month) || 1;
-
-                const kSales = ['sales', 'value', 'amount', 'total'];
-                const kBulan = ['bulan', 'month'];
-                const kCity = ['city', 'kota', 'kabupaten', 'area']; 
-                const kCustCode = ['customer code', 'cust code', 'kode pelanggan'];
-
-                let cMap = {}; 
-
-                const processCity = (r, is2025) => {
-                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
-                    let city = String(getVal(r, kCity) || '').toUpperCase();
-                    let sales = parseNum(getVal(r, kSales));
-                    let cust = getVal(r, kCustCode);
-
-                    if(city && city !== 'UNDEFINED' && city !== '') {
-                        if(!cMap[city]) cMap[city] = { y26:0, y25:0, f25:0, mtd26:0, mtd25:0, reach: new Set(), reachMtd: new Set() };
-                        if(cust && sales > 0) { cMap[city].reach.add(cust); if(bln === m && !is2025) cMap[city].reachMtd.add(cust); }
-
-                        if(is2025) {
-                            cMap[city].f25 += sales; if(bln <= m) cMap[city].y25 += sales; if(bln === m) cMap[city].mtd25 += sales;
-                        } else {
-                            if(bln <= m) cMap[city].y26 += sales; if(bln === m) cMap[city].mtd26 += sales;
-                        }
-                    }
-                };
-
-                sales2025.forEach(r => processCity(r, true));
-                sales2026.forEach(r => processCity(r, false));
-
-                let totalCityVal = 0;
-                let sortKey = viewMode === 'MTD' ? 'mtd26' : 'y26';
-                let cityArr = Object.keys(cMap).map(k => {
-                    let d = cMap[k];
-                    if (viewMode === 'YTD') totalCityVal += d.y26; else totalCityVal += d.mtd26;
-                    return { city: k, y26: d.y26, avg25: d.f25/12, mtd26: d.mtd26, mtd25: d.mtd25, avgGrwt: calcGrowth(d.y26/m, d.f25/12), ytdGrwt: calcGrowth(d.y26, d.y25), mtdGrwt: calcGrowth(d.mtd26, d.mtd25), reach: d.reach.size, reachMtd: d.reachMtd.size };
-                }).sort((a,b) => b[sortKey] - a[sortKey]).slice(0, 7); 
-
-                let top7Share = totalCityVal > 0 ? Math.round((cityArr.reduce((a,c)=>a+c[sortKey], 0) / totalCityVal) * 100) : 0;
-                let totalAvg25All = Object.keys(cMap).reduce((a,c)=>a+(viewMode==='MTD'?cMap[c].mtd25:(cMap[c].f25/12)),0);
-                
-                return { cityArr, top7Share, totalAvg25All, totalCityVal };
-            }, [apiData, month, viewMode]);
-
-            if (!apiData || !cMapData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
-
-            return (
-                <div className="space-y-6 animate-fade-in pb-12 w-full">
-                    <div className="bg-white p-4 border shadow-md w-full">
-                        <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
-                            <h2 className="header-title !mb-0 !text-xl !px-10">Big Pareto City/Kabupaten in Papua</h2>
-                            <div className="flex bg-gray-200 rounded p-1 no-print">
-                                <button onClick={() => setViewMode('MTD')} className={`px-4 py-1 font-bold rounded text-xs ${viewMode==='MTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>MTD</button>
-                                <button onClick={() => setViewMode('YTD')} className={`px-4 py-1 font-bold rounded text-xs ${viewMode==='YTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>YTD</button>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-                            {cMapData.cityArr.length === 0 ? <p className="text-center col-span-4 py-4">Data kota tidak ditemukan.</p> : null}
-                            {cMapData.cityArr.map((r, i) => {
-                                let val = viewMode === 'MTD' ? r.mtd26 : r.y26;
-                                let share = cMapData.totalCityVal > 0 ? Math.round((val/cMapData.totalCityVal)*100) : 0;
-                                return (
-                                    <div key={i} className="city-card">
-                                        <div className="city-logo">🌆</div>
-                                        <div className="city-info">
-                                            <div className="city-title">{r.city}</div>
-                                            <div className="city-stat"><span>Buss. Contr:</span> <b>{share}%</b></div>
-                                            <div className="city-stat"><span>{viewMode==='MTD'?'MTD 2025':'Avg 2025'}:</span> <b>Rp {formatCurr(viewMode==='MTD'?r.mtd25:r.avg25)}</b></div>
-                                            <div className="city-stat"><span>{viewMode==='MTD'?'MTD':'Avg'} Growth:</span> <b className={cGrw(viewMode==='MTD'?r.mtdGrwt:r.avgGrwt)}>{fGrw(viewMode==='MTD'?r.mtdGrwt:r.avgGrwt)}</b></div>
-                                            {viewMode==='YTD' && <div className="city-stat"><span>YTD Growth:</span> <b className={cGrw(r.ytdGrwt)}>{fGrw(r.ytdGrwt)}</b></div>}
-                                            <div className="city-stat"><span>Reach:</span> <b>{viewMode==='MTD'?r.reachMtd:r.reach} Outlets</b></div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            <div className="city-card !border-blue-600 !bg-blue-50 !flex-col !justify-center !text-center">
-                                <h3 className="text-lg font-black text-blue-900 mb-2">SUMMARY</h3>
-                                <p className="text-sm font-semibold text-gray-800">7 Kabupaten/Kota,<br/>Contribute <span className="text-blue-600 font-black text-lg">{cMapData.top7Share}%</span> share<br/>business contribution with<br/>{viewMode==='MTD'?'MTD 2025 Total':'Avg/month'} Rp {formatCurr(cMapData.totalAvg25All)}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-[#0f172a] p-8 border shadow-md relative overflow-hidden rounded-xl w-full">
-                        <div className="text-center mb-6 relative z-10"><h2 className="header-title !bg-blue-600 !text-white !border-white">COMMAND CENTER: PAPUA COVERAGE</h2></div>
-                        <div className="w-full h-[400px] relative mx-auto flex items-center justify-center">
-                            <svg viewBox="0 0 1000 500" className="w-full h-full text-blue-900 opacity-60 absolute drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]"><path fill="currentColor" stroke="#3b82f6" strokeWidth="2" d="M 120,220 C 150,200 200,180 250,210 C 280,230 250,280 200,320 C 150,350 100,300 120,220 Z" /><path fill="currentColor" stroke="#3b82f6" strokeWidth="2" d="M 230,230 C 280,200 350,150 450,180 C 550,210 650,200 750,250 C 850,300 900,350 850,400 C 750,450 600,420 500,400 C 400,380 300,420 250,350 C 220,300 210,260 230,230 Z" /></svg>
-                            <div className="absolute top-[40%] left-[20%] text-white text-xs font-bold text-center"><div className="w-4 h-4 bg-yellow-400 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-yellow-400 animate-ping-map"></div></div>SORONG</div>
-                            <div className="absolute top-[65%] left-[25%] text-white text-xs font-bold text-center"><div className="w-4 h-4 bg-red-500 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-red-500 animate-ping-map"></div></div>MANOKWARI</div>
-                            <div className="absolute top-[30%] left-[40%] text-white text-xs font-bold text-center"><div className="w-4 h-4 bg-green-400 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-green-400 animate-ping-map"></div></div>BIAK</div>
-                            <div className="absolute top-[45%] left-[55%] text-white text-xs font-bold text-center"><div className="w-4 h-4 bg-cyan-400 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-cyan-400 animate-ping-map"></div></div>JAYAPURA</div>
-                            <div className="absolute top-[70%] left-[65%] text-white text-xs font-bold text-center"><div className="w-5 h-5 bg-orange-500 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-orange-500 animate-ping-map"></div></div>MIMIKA</div>
-                            <div className="absolute top-[80%] left-[85%] text-white text-xs font-bold text-center"><div className="w-6 h-6 bg-pink-500 rounded-full mx-auto relative"><div className="absolute inset-0 rounded-full bg-pink-500 animate-ping-map"></div></div>MERAUKE</div>
-                        </div>
                     </div>
                 </div>
             );
@@ -1503,8 +1555,17 @@
 
             if (!apiData || !oaData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
+            const aiContext = `Active Outlet (AO) Variance ${viewMode}: ${oaData.variance}. Lost Sales APL: Rp ${formatCurr(lossData.totalAPL)}. Lost Sales KFT: Rp ${formatCurr(lossData.totalKFT)}.`;
+
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
+                    <TabAIPanel 
+                        title="AI Analysis: Buying Outlets & Lost Sales"
+                        contextData={aiContext}
+                        systemInstruction="Fokus pada tren Active Outlet (AO) dan total Lost Sales APL maupun KFT. Jelaskan mengapa hilangnya outlet ini krusial (Why it matters). Berikan tindakan konkrit (What action) dengan menugaskan MD atau Sales APL/PSR untuk re-aktivasi. WAJIB output dalam BENTUK TABEL Markdown."
+                        autoRun={true}
+                    />
+
                     <div className="bg-white p-4 shadow-md border border-gray-300 w-full">
                         <div className="flex flex-wrap justify-between items-center mb-2 gap-2">
                             <h2 className="header-title !mb-0">Performance Buying Outlet</h2>
@@ -1686,8 +1747,17 @@
 
             if (!apiData || !npdData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
+            const aiContext = `Total AO 2025: ${npdData.totAO.t25}. Total AO 2026: ${npdData.totAO.t26}. Total Omset 2025: Rp ${formatCurr(npdData.totOmset.t25)}. Total Omset 2026: Rp ${formatCurr(npdData.totOmset.t26)}.`;
+
             return (
                  <div className="space-y-8 animate-fade-in pb-12 w-full max-w-none">
+                    <TabAIPanel 
+                        title="AI Analysis: NPD Funnel & Saturation"
+                        contextData={aiContext}
+                        systemInstruction="Fokuskan pada tren konversi AO (Active Outlets) produk baru. Jika AO 2026 lebih rendah dari 2025, bahas 'Why it happened' (Apakah kurang pemerataan? Harga?). Rekomendasikan action plan spesifik (bundling, trade promo) untuk mengamankan 1st order & repeat order. WAJIB output dalam BENTUK TABEL Markdown."
+                        autoRun={true}
+                    />
+
                     <div className="bg-slate-50 p-4 border border-gray-300 rounded-lg flex flex-wrap gap-4 items-center no-print">
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-gray-700 uppercase">Distributor:</span>
@@ -1708,25 +1778,29 @@
                                 {[1,2,3,4,5,6,7,8,9,10,11,12].map(mOpt => <option key={mOpt} value={mOpt}>Bulan {mOpt}</option>)}
                             </select>
                         </div>
-                        <div className="text-[10px] text-gray-500 italic w-full">*Mode Total akan memengaruhi perhitungan kolom Total 2025, Total 2026 & Grand Total berdasarkan Bulan yang dipilih.</div>
                     </div>
 
                     <div className="bg-white p-4 border shadow-md w-full overflow-x-auto">
-                        <div className="text-center mb-4"><h2 className="header-title">NPD MONITORING PERFORMANCE (OMSET)</h2></div>
+                        <div className="text-center mb-4">
+                            <h2 className="header-title">NPD FUNNEL MONITORING PERFORMANCE (OMSET)</h2>
+                            <p className="text-xs font-bold text-gray-500 mt-1">Track Funnel: Pipeline → Product Saturation → 1st Order & Repeat → Stock/DOI → Return Risk</p>
+                        </div>
                         <div className="w-full">
                             <table className="excel-table npd-table w-[1200px] max-w-none">
                                 <thead>
                                     <tr>
                                         <th rowSpan="2" className="text-left bg-white min-w-[200px]">Product Name</th>
-                                        <th colSpan="5" className="bg-2025 text-center border-b-2 border-black">2025</th>
+                                        <th colSpan="5" className="bg-2025 text-center border-b-2 border-black">2025 Sales (1st & Repeat Order)</th>
                                         <th rowSpan="2" className="bg-2025 font-bold">2025 Total ({viewMode})</th>
-                                        <th colSpan="12" className="bg-2026 text-center border-b-2 border-black">2026</th>
+                                        <th colSpan="12" className="bg-2026 text-center border-b-2 border-black">2026 Sales (1st & Repeat Order)</th>
                                         <th rowSpan="2" className="bg-2026 font-bold">2026 Total ({viewMode})</th>
                                         <th rowSpan="2" className="bg-grand">Grand Total</th>
+                                        <th colSpan="3" className="bg-gray-200 text-center text-gray-500 border-b-2 border-gray-400">Future Monitoring Metrics</th>
                                     </tr>
                                     <tr>
                                         <th className="bg-2025">Aug</th><th className="bg-2025">Sep</th><th className="bg-2025">Oct</th><th className="bg-2025">Nov</th><th className="bg-2025">Dec</th>
                                         <th className="bg-2026">Jan</th><th className="bg-2026">Feb</th><th className="bg-2026">Mar</th><th className="bg-2026">Apr</th><th className="bg-2026">May</th><th className="bg-2026">Jun</th><th className="bg-2026">Jul</th><th className="bg-2026">Aug</th><th className="bg-2026">Sep</th><th className="bg-2026">Oct</th><th className="bg-2026">Nov</th><th className="bg-2026">Dec</th>
+                                        <th className="bg-gray-100 text-gray-500 text-[9px]">Acct Pipeline</th><th className="bg-gray-100 text-gray-500 text-[9px]">Stock/DOI</th><th className="bg-gray-100 text-gray-500 text-[9px]">Return Risk</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1738,6 +1812,7 @@
                                             {[1,2,3,4,5,6,7,8,9,10,11,12].map(mon => <td key={'26'+mon}>{r.data.s26[mon] ? formatCurr(r.data.s26[mon]) : ''}</td>)}
                                             <td className="font-bold bg-orange-50">{r.t26 > 0 ? formatCurr(r.t26) : ''}</td>
                                             <td className="bg-green-50 font-bold">{r.grand > 0 ? formatCurr(r.grand) : ''}</td>
+                                            <td className="text-center text-gray-300">-</td><td className="text-center text-gray-300">-</td><td className="text-center text-gray-300">-</td>
                                         </tr>
                                     ))}
                                     <tr className="total-row bg-yellow-300">
@@ -1747,6 +1822,7 @@
                                         {[1,2,3,4,5,6,7,8,9,10,11,12].map(mon => <td key={'t26'+mon}>{npdData.totOmset.s26[mon] > 0 ? formatCurr(npdData.totOmset.s26[mon]) : ''}</td>)}
                                         <td className="font-black bg-orange-400">{formatCurr(npdData.totOmset.t26)}</td>
                                         <td className="font-black bg-green-400">{formatCurr(npdData.totOmset.grand)}</td>
+                                        <td colSpan="3" className="bg-gray-200"></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1754,7 +1830,7 @@
                     </div>
                     
                     <div className="bg-white p-4 border shadow-md w-full overflow-x-auto">
-                        <div className="text-center mb-4"><h2 className="header-title">MONITORING AO (ACTIVE OUTLETS)</h2></div>
+                        <div className="text-center mb-4"><h2 className="header-title">MONITORING AO & PRODUCT SATURATION</h2></div>
                         <div className="w-full">
                             <table className="excel-table npd-table w-[1200px] max-w-none">
                                 <thead>
@@ -1912,8 +1988,10 @@
                     let orderForEOY = remainingTargetUnit > d.stockUnit ? Math.round(remainingTargetUnit - d.stockUnit) : 0;
                     let estEOYValue = orderForEOY * estimatedPrice;
 
-                    return { ...d, estimatedPrice, avgMonthlySalesUnit, scd, requiredStockUnit, status, color, stockValue, requiredStockValue, orderForEOY, estEOYValue };
-                }).sort((a,b) => b.scd - a.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetFy > 0 || d.ytdSalesRp > 0);
+                    let achYtdRp = getP(d.ytdSalesRp, d.targetYtd);
+
+                    return { ...d, estimatedPrice, avgMonthlySalesUnit, scd, requiredStockUnit, status, color, stockValue, requiredStockValue, orderForEOY, estEOYValue, achYtdRp };
+                }).sort((a,b) => a.scd - b.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetFy > 0 || d.ytdSalesRp > 0);
             }, [apiData, m, viewMode]);
 
             if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
@@ -1931,8 +2009,33 @@
                 fSum.eoyUnit += (d.orderForEOY || 0); fSum.eoyVal += (d.estEOYValue || 0);
             });
 
+            // Ekstraksi Konteks Pareto & Kritis untuk AI
+            const topUnder = tableData.filter(d=>d.status==='Understock').sort((a,b)=>b.targetFy - a.targetFy).slice(0,5).map(d=>`- ${d.name} (SCD: ${d.scd}, Target FY: Rp ${formatCurr(d.targetFy)}, Stok: ${formatCurr(d.stockUnit)})`).join('\n');
+            const topOverDeficit = tableData.filter(d=>d.status==='Overstock' && d.achYtdRp < 100).sort((a,b)=>b.targetFy - a.targetFy).slice(0,5).map(d=>`- ${d.name} (SCD: ${d.scd}, Ach YTD: ${d.achYtdRp}%, Stok: ${formatCurr(d.stockUnit)})`).join('\n');
+
+            const aiContext = `Top 5 Produk Kritis OOS/Understock (SCD < 30) dengan Target Terbesar:\n${topUnder || 'Aman'}\n\nTop 5 Produk Overstock (SCD > 90) TAPI Ach YTD masih minus (< 100%):\n${topOverDeficit || 'Tidak ada'}\n\nLead Time Pengiriman (Penting): 45 Hari.`;
+            
+            const aiPrompt = `Lakukan analisa Stock Forecast & Supply Chain secara KOMPREHENSIF.
+PENTING: Waktu pengiriman (Lead Time) adalah 45 hari.
+
+Fokus Analisa:
+1. Analisa produk dengan target besar/Pareto (seperti Paratusin dll jika ada di data) yang berstatus Understock. Ingatkan bahwa dengan Lead Time 45 hari, SCD < 45 berarti sudah telat order (Lost Sales di depan mata). Berikan perhitungan H-berapa harusnya diorder.
+2. Untuk barang Overstock tapi Target YTD belum tercapai, sarankan strategi *push sell-out* agresif ke outlet (bukan retur).
+
+WAJIB FORMAT: Buat SATU TABEL MARKDOWN UTAMA yang berisi analisa produk-produk kritis tersebut dengan struktur kolom: 
+| Nama Produk | Status & SCD | Akar Masalah (Why) | Implikasi (Why it matters) | Action Plan & Rekomendasi Order | PIC & Timeline |
+(Pilih PIC secara realistis dari MD, Sales APL, PSR, atau Trade Marketing).`;
+
             return (
                 <div className="space-y-4 animate-fade-in pb-12 w-full">
+                    <TabAIPanel 
+                        title="AI Analysis: Supply Chain & Forecast"
+                        contextData={aiContext}
+                        systemInstruction={aiPrompt}
+                        buttonLabel="Analisa Forecast & Logistik"
+                        autoRun={true}
+                    />
+
                     <div className="bg-white p-6 border shadow animate-fade-in w-full">
                         <div className="flex flex-col md:flex-row justify-between items-center mb-4 border-b pb-2 gap-4">
                             <h2 className="text-xl font-black text-blue-900 mb-2 md:mb-0">Analisa Stock Forecast & Kebutuhan Akhir Tahun</h2>
@@ -2044,6 +2147,14 @@
             const [filterDivisi, setFilterDivisi] = useState('ALL');
             const [filterDistributor, setFilterDistributor] = useState('ALL');
 
+            // CLOCK STATE
+            const [currentTime, setCurrentTime] = useState(new Date());
+
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
             useEffect(() => { 
                 setIsLoading(true); setErrorMsg(null);
                 fetch(API_URL).then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.json(); })
@@ -2078,20 +2189,23 @@
                     <div className="bg-white border-b shadow-sm sticky top-0 z-50 no-print">
                         <div className="max-w-[1400px] mx-auto px-2 py-2 md:px-4 md:py-3 flex flex-wrap justify-between items-center gap-2">
                             <h1 className="text-lg md:text-xl font-black italic text-blue-900 tracking-tighter w-full lg:w-auto text-center lg:text-left">Push Limits Dashboard</h1>
+                            
                             <div className="flex w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 snap-x justify-start lg:justify-center">
                                 <div className="flex space-x-1 whitespace-nowrap px-1">
                                     <button onClick={()=>setActiveTab('presenter')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='presenter'?'border-red-500 text-red-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Business Review</button>
-                                    <button onClick={()=>setActiveTab('summary')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='summary'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Summary</button>
                                     <button onClick={()=>setActiveTab('dashboard')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='dashboard'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Report Sales</button>
                                     <button onClick={()=>setActiveTab('pareto')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='pareto'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Pareto Brand</button>
-                                    <button onClick={()=>setActiveTab('city')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='city'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Big City Papua</button>
                                     <button onClick={()=>setActiveTab('outlets')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='outlets'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Buying Outlets</button>
                                     <button onClick={()=>setActiveTab('npd')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='npd'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>NPD Monitor</button>
                                     <button onClick={()=>setActiveTab('forecast')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='forecast'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Forecast</button>
                                     <button onClick={()=>setActiveTab('upload')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='upload'?'border-blue-500 text-blue-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Upload</button>
                                 </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 text-sm font-bold w-full lg:w-auto justify-center lg:justify-end">
+                            
+                            <div className="flex flex-wrap items-center gap-3 text-sm font-bold w-full lg:w-auto justify-center lg:justify-end">
+                                <div className="text-[10px] bg-slate-800 text-white px-2 py-1 rounded shadow flex items-center gap-1">
+                                    <span>🕒</span> {currentTime.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jayapura' })} WIT
+                                </div>
                                 {isLoading ? <span className="text-orange-500 text-xs">Memuat...</span> : errorMsg ? <span className="text-red-500 text-xs">⚠️ Error</span> : <span className="text-green-600 hidden lg:inline text-xs">✅ Terhubung</span>}
                                 {activeTab !== 'upload' && (
                                     <div className="flex items-center bg-gray-100 p-1 rounded border gap-1 shadow-sm">
@@ -2137,17 +2251,26 @@
                                 <p className="text-sm md:text-base">Sistem sedang menarik & memproses data dari Google Sheets. Harap tunggu...</p>
                             </div>
                         ) : errorMsg && !apiData ? (
-                            <div className="p-4 md:p-8 m-2 md:m-4 bg-amber-50 border border-amber-300 rounded text-amber-900 text-center shadow no-print">
-                                <h3 className="text-base md:text-lg font-bold mb-2">⚠️ Peringatan Server / Koneksi</h3>
-                                <p className="text-xs md:text-sm mb-4">{errorMsg}</p>
-                                <p className="text-[10px] md:text-xs text-gray-600 mb-4">Aplikasi tetap dapat digunakan untuk mengunggah file data baru via menu <b>Upload</b>.</p>
-                                <button onClick={() => window.location.reload()} className="px-4 py-2 bg-amber-600 text-white font-bold rounded text-xs md:text-sm">Coba Muat Ulang</button>
+                            <div className="p-6 m-4 bg-red-50 border border-red-300 rounded text-red-900 text-center shadow no-print max-w-3xl mx-auto">
+                                <h3 className="text-lg font-black mb-4">⚠️ Peringatan Server / Koneksi (Error 404)</h3>
+                                <p className="text-sm mb-4 font-bold">{errorMsg}</p>
+                                <div className="bg-red-100 p-4 rounded text-left text-xs mb-6">
+                                    <p className="font-bold text-red-700">Penyebab:</p>
+                                    <p className="mb-2">Link Google Apps Script Anda (API_URL) sudah mati, dihapus, atau URL salah.</p>
+                                    <p className="font-bold text-red-700 mt-3">Solusi Permanen:</p>
+                                    <ol className="list-decimal pl-4 space-y-1">
+                                        <li>Buka Google Sheets &gt; Ekstensi &gt; Apps Script.</li>
+                                        <li>Klik <b>Terapkan (Deploy)</b> &gt; Deployment Baru.</li>
+                                        <li>Pilih Aplikasi Web. Akses: <b>"Siapa Saja" (Anyone)</b>.</li>
+                                        <li>Salin URL baru tersebut.</li>
+                                        <li>Ganti URL lama di file kode Anda (baris ke-63: <code>const API_URL = '...'</code>) dengan URL yang baru.</li>
+                                    </ol>
+                                </div>
+                                <button onClick={() => window.location.reload()} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow transition-all">Coba Muat Ulang Server</button>
                             </div>
                         ) : activeTab === 'presenter' ? <BusinessReviewParentView apiData={apiData} globalMonth={filters.month} /> :
-                            activeTab === 'summary' ? <SummaryView apiData={apiData} month={filters.month} /> :
                             activeTab === 'dashboard' ? <ReportSalesView apiData={apiData} month={filters.month} searchOutlet={searchOutlet} filterDivisi={filterDivisi} filterDistributor={filterDistributor} /> :
                             activeTab === 'pareto' ? <ParetoBrandView apiData={apiData} month={filters.month} /> :
-                            activeTab === 'city' ? <CityView apiData={apiData} month={filters.month} /> :
                             activeTab === 'outlets' ? <OutletAnalysisView apiData={apiData} month={filters.month} /> :
                             activeTab === 'npd' ? <NPDView apiData={apiData} month={filters.month} /> :
                             activeTab === 'forecast' ? <ForecastView apiData={apiData} month={filters.month} /> :
@@ -2156,7 +2279,7 @@
                     </main>
 
                     <footer className="mt-auto bg-gray-800 text-white text-center py-4 text-xs font-bold border-t-4 border-orange-500 no-print w-full">
-                        Web Monitoring BY Ellyas Martadinata
+                        Web Monitoring BY Ellyas Martadinata | AI Strategic Advisor Integrated
                     </footer>
                 </div>
             );
