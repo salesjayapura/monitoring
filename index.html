@@ -291,6 +291,10 @@
                 let skuChart = Array.from({length:12}, (_,i)=>({ name:mNames[i], sku26: new Set(), sku25: new Set(), totalSku26:0, totalSku25:0 }));
 
                 let hasTargetOutlet = false;
+                let startMonth3M = Math.max(1, m - 3);
+                let monthsInWindow = Math.max(1, Math.min(3, m - 1));
+                if (m === 1) monthsInWindow = 1;
+
                 (apiData.target2026||[]).forEach(r => {
                     let cName = String(getVal(r, kCustName) || '').trim().toUpperCase();
                     if (cName && (isAllMode || cName === searchName || cName.includes(searchName))) {
@@ -299,7 +303,7 @@
                         let tVal = parseNum(getVal(r, kTarget));
                         let bln = parseBulan(getVal(r, kBulan));
                         if (bln > 0) { targetFY += tVal; if (bln === m) targetMTD += tVal; } else { targetFY += tVal; targetMTD += (tVal / 12); }
-                        if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0 };
+                        if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0, sales_last_3m: 0 };
                         skuMap[pName].target += tVal; if (bln === m) skuMap[pName].targetMtd += tVal; else if(bln===0) skuMap[pName].targetMtd += (tVal / 12);
                     }
                 });
@@ -312,7 +316,7 @@
                         let salesVal = parseNum(getVal(r, kSales));
 
                         if(salesVal > 0) skuChart[bln-1].sku25.add(pName); 
-                        if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0 };
+                        if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0, sales_last_3m: 0 };
                         skuMap[pName].sales25 += salesVal; if(bln === m) skuMap[pName].mtd25 += salesVal;
                     }
                 });
@@ -325,21 +329,42 @@
                         let salesVal = parseNum(getVal(r, kSales));
 
                         if(salesVal > 0) skuChart[bln-1].sku26.add(pName);
-                        if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0 };
-                        if(bln <= m) skuMap[pName].ytd26 += salesVal; if(bln === m) skuMap[pName].mtd26 += salesVal;
+                        if(!skuMap[pName]) skuMap[pName] = { target: 0, targetMtd: 0, sales25: 0, mtd25: 0, ytd26: 0, mtd26: 0, sales_last_3m: 0 };
+                        if(bln <= m) skuMap[pName].ytd26 += salesVal; 
+                        if(bln === m) skuMap[pName].mtd26 += salesVal;
+
+                        if (bln >= startMonth3M && bln < m) {
+                            skuMap[pName].sales_last_3m += salesVal;
+                        }
                     }
                 });
 
                 let tot25 = 0; let totYtd26 = 0; let totMtd25 = 0; let totMtd26 = 0;
+                let sumTargetMtd = 0; let sumTargetFY = 0;
+
                 let skuArr = Object.keys(skuMap).map(k => {
                     let d = skuMap[k];
-                    // Fallback Avg 3 Bulan Jika Data Target Outlet Kosong
-                    if (!hasTargetOutlet) { d.target = d.sales25; d.targetMtd = d.sales25 / 12 * 3; } // Asumsi Avg 3 Bulan = (Total LY / 12) * 3
+                    
+                    if (d.targetMtd === 0 && d.target === 0) {
+                        let calcAvgMtd = (d.sales_last_3m / monthsInWindow) || 0;
+                        if (calcAvgMtd === 0 && d.sales25 > 0 && !hasTargetOutlet) {
+                             calcAvgMtd = d.sales25 / 12 * 3; 
+                        }
+                        d.targetMtd = calcAvgMtd;
+                        d.target = calcAvgMtd * 12;
+                    }
+
+                    sumTargetMtd += d.targetMtd;
+                    sumTargetFY += d.target;
+                    
                     tot25 += d.sales25; totYtd26 += d.ytd26; totMtd25 += d.mtd25; totMtd26 += d.mtd26;
                     return { name: k, ...d };
                 }).sort((a,b) => b.mtd26 - a.mtd26);
 
-                if (!hasTargetOutlet) { targetFY = tot25; targetMTD = totMtd25; }
+                if (!hasTargetOutlet || targetMTD === 0) { 
+                    targetMTD = sumTargetMtd; 
+                    targetFY = sumTargetFY; 
+                }
 
                 skuChart.forEach(d => { d.totalSku26 = d.sku26.size; d.totalSku25 = d.sku25.size; });
                 return { targetFY, targetMTD, tot25, totYtd26, totMtd25, totMtd26, skuArr, skuChart, m, mName };
@@ -477,11 +502,15 @@
             const ohtRows = useMemo(() => {
                 if (!apiData) return [];
                 let outMap = {}; let keyMap = {}; 
+                let startMonth3M = Math.max(1, m - 3);
+                let monthsInWindow = Math.max(1, Math.min(3, m - 1));
+                if (m === 1) monthsInWindow = 1;
+
                 const regOut = (r) => {
                     let code = String(getVal(r, kCode) || '').trim().toUpperCase(); let name = String(getVal(r, kCustName) || '').trim().toUpperCase();
                     if (name && name !== 'UNDEFINED') {
                         if (!code) code = '-'; let key = code + '|||' + name; 
-                        if (!outMap[key]) { outMap[key] = { code, name, targetMtd:0, targetYtd:0, hitMtd:0, hitYtd:0, hitMtd25:0, hitYtd25:0 }; if (code !== '-') keyMap[code] = key; keyMap[name] = key; }
+                        if (!outMap[key]) { outMap[key] = { code, name, targetMtd:0, targetYtd:0, hitMtd:0, hitYtd:0, hitMtd25:0, hitYtd25:0, sales_last_3m: 0 }; if (code !== '-') keyMap[code] = key; keyMap[name] = key; }
                     }
                 };
                 (apiData.target2026||[]).forEach(regOut); (apiData.sales2026||[]).forEach(regOut); (apiData.sales2025||[]).forEach(regOut);
@@ -499,14 +528,25 @@
                         let bln = parseBulan(getVal(r, kBulan)); if(!bln) return;
                         let key = getKey(String(getVal(r, kCode)||'').trim().toUpperCase(), String(getVal(r, kCustName)||'').trim().toUpperCase()); if (!key) return;
                         let sVal = parseNum(getVal(r, kSales));
-                        if (is2025) { if(bln<=m) outMap[key].hitYtd25+=sVal; if(bln===m) outMap[key].hitMtd25+=sVal; } else { if(bln<=m) outMap[key].hitYtd+=sVal; if(bln===m) outMap[key].hitMtd+=sVal; }
+                        if (is2025) { 
+                            if(bln<=m) outMap[key].hitYtd25+=sVal; 
+                            if(bln===m) outMap[key].hitMtd25+=sVal; 
+                        } else { 
+                            if(bln<=m) outMap[key].hitYtd+=sVal; 
+                            if(bln===m) outMap[key].hitMtd+=sVal; 
+                            if(bln >= startMonth3M && bln < m) outMap[key].sales_last_3m += sVal;
+                        }
                     });
                 };
                 fillSales(apiData.sales2025, true); fillSales(apiData.sales2026, false);
 
                 return Object.values(outMap).map(d => {
-                    if (d.targetMtd === 0 && d.hitMtd25 > 0) d.targetMtd = d.hitMtd25;
-                    if (d.targetYtd === 0 && d.hitYtd25 > 0) d.targetYtd = d.hitYtd25;
+                    if (d.targetMtd === 0 && d.targetYtd === 0) {
+                        let calcAvgMtd = (d.sales_last_3m / monthsInWindow) || 0;
+                        if (calcAvgMtd === 0 && d.hitMtd25 > 0) calcAvgMtd = d.hitMtd25;
+                        d.targetMtd = calcAvgMtd;
+                        d.targetYtd = calcAvgMtd * m;
+                    }
                     return { ...d, growthMtd: calcGrowth(d.hitMtd, d.hitMtd25), growthYtd: calcGrowth(d.hitYtd, d.hitYtd25), gapMtd: d.hitMtd - d.targetMtd, gapYtd: d.hitYtd - d.targetYtd };
                 }).sort((a, b) => b.hitMtd - a.hitMtd);
             }, [apiData, m]);
@@ -567,11 +607,15 @@
             const phtRows = useMemo(() => {
                 if (!apiData) return [];
                 let prodMap = {}; let keyMap = {}; 
+                let startMonth3M = Math.max(1, m - 3);
+                let monthsInWindow = Math.max(1, Math.min(3, m - 1));
+                if (m === 1) monthsInWindow = 1;
+
                 const regProd = (r) => {
                     let code = String(getVal(r, kProdCode) || '').trim().toUpperCase(); let name = String(getVal(r, kProd) || '').trim().toUpperCase();
                     if (name && name !== 'UNDEFINED') {
                         if (!code) code = '-'; let key = code + '|||' + name; 
-                        if (!prodMap[key]) { prodMap[key] = { code, name, biz: detectBizType(r), targetMtd:0, targetYtd:0, hitMtd:0, hitYtd:0, hitMtd25:0, hitYtd25:0 }; if (code !== '-') keyMap[code] = key; keyMap[name] = key; }
+                        if (!prodMap[key]) { prodMap[key] = { code, name, biz: detectBizType(r), targetMtd:0, targetYtd:0, hitMtd:0, hitYtd:0, hitMtd25:0, hitYtd25:0, sales_last_3m: 0 }; if (code !== '-') keyMap[code] = key; keyMap[name] = key; }
                     }
                 };
                 (apiData.target2026||[]).forEach(regProd); (apiData.sales2026||[]).forEach(regProd); (apiData.sales2025||[]).forEach(regProd);
@@ -589,14 +633,25 @@
                         let bln = parseBulan(getVal(r, kBulan)); if(!bln) return;
                         let key = getKey(String(getVal(r, kProdCode)||'').trim().toUpperCase(), String(getVal(r, kProd)||'').trim().toUpperCase()); if (!key) return;
                         let sVal = parseNum(getVal(r, kSales));
-                        if (is2025) { if(bln<=m) prodMap[key].hitYtd25+=sVal; if(bln===m) prodMap[key].hitMtd25+=sVal; } else { if(bln<=m) prodMap[key].hitYtd+=sVal; if(bln===m) prodMap[key].hitMtd+=sVal; }
+                        if (is2025) { 
+                            if(bln<=m) prodMap[key].hitYtd25+=sVal; 
+                            if(bln===m) prodMap[key].hitMtd25+=sVal; 
+                        } else { 
+                            if(bln<=m) prodMap[key].hitYtd+=sVal; 
+                            if(bln===m) prodMap[key].hitMtd+=sVal; 
+                            if (bln >= startMonth3M && bln < m) prodMap[key].sales_last_3m += sVal;
+                        }
                     });
                 };
                 fillSales(apiData.sales2025, true); fillSales(apiData.sales2026, false);
 
                 return Object.values(prodMap).map(d => {
-                    if (d.targetMtd === 0 && d.hitMtd25 > 0) d.targetMtd = d.hitMtd25;
-                    if (d.targetYtd === 0 && d.hitYtd25 > 0) d.targetYtd = d.hitYtd25;
+                    if (d.targetMtd === 0 && d.targetYtd === 0) {
+                        let calcAvgMtd = (d.sales_last_3m / monthsInWindow) || 0;
+                        if (calcAvgMtd === 0 && d.hitMtd25 > 0) calcAvgMtd = d.hitMtd25;
+                        d.targetMtd = calcAvgMtd;
+                        d.targetYtd = calcAvgMtd * m;
+                    }
                     return { ...d, growthMtd: calcGrowth(d.hitMtd, d.hitMtd25), growthYtd: calcGrowth(d.hitYtd, d.hitYtd25), gapMtd: d.hitMtd - d.targetMtd, gapYtd: d.hitYtd - d.targetYtd };
                 }).sort((a, b) => b.hitMtd - a.hitMtd);
             }, [apiData, m]);
