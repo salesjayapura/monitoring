@@ -1175,9 +1175,27 @@
                                 <tr className="total-row bg-yellow-200"><td colSpan="2" className="text-left">TOTAL PHG</td>{viewMode === 'YTD' ? <><td className="text-right">{formatCurr(chanPHG.tot.avg25)}</td><td className="text-right">{formatCurr(chanPHG.tot.avgYtd25)}</td><td className="text-right text-blue-800">{formatCurr(chanPHG.tot.avgYtd26)}</td><td className={`text-center ${cGrw(chanPHG.tot.avgGrwt)}`}>{fGrw(chanPHG.tot.avgGrwt)}</td><td className={`text-center ${cGrw(chanPHG.tot.ytdGrwt)}`}>{fGrw(chanPHG.tot.ytdGrwt)}</td></> : <><td className="text-right">{formatCurr(chanPHG.tot.mtd25)}</td><td className="text-right text-blue-800">{formatCurr(chanPHG.tot.mtd26)}</td><td className={`text-center ${cGrw(chanPHG.tot.mtdGrwt)}`}>{fGrw(chanPHG.tot.mtdGrwt)}</td></>}</tr>
                                 <tr><td colSpan="7" className="border-none h-2"></td></tr>
                                 {chanAllArr.map((r, i) => (
-                                    <tr key={'allchan'+i}>{i === 0 && <td rowSpan={chanAllArr.length} className="font-bold bg-white text-center">Biz Type<br/><span className="text-[10px] font-normal text-gray-600">ALL / GABUNGAN</span></td>}<td className="text-left font-semibold">{r.cluster}</td>{viewMode === 'YTD' ? <><td className="text-right">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.avgYtd25)}</td><td className="text-right text-blue-700 font-semibold">{formatCurr(r.avgYtd26)}</td><td className={`text-center ${cGrw(r.avgGrwt)}`} style={r.avgGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.avgGrwt < 0 ? () => handleRsClick(r.avgGrwt, 'Avg Growth ALL - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.avgGrwt)}</td><td className={`text-center ${cGrw(r.ytdGrwt)}`} style={r.ytdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.ytdGrwt < 0 ? () => handleRsClick(r.ytdGrwt, 'YTD Growth ALL - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.ytdGrwt)}</td></> : <><td className="text-right">{formatCurr(r.mtd25)}</td><td className="text-right text-blue-700 font-semibold">{formatCurr(r.mtd26)}</td><td className={`text-center ${cGrw(r.mtdGrwt)}`} style={r.mtdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.mtdGrwt < 0 ? () => handleRsClick(r.mtdGrwt, 'MTD Growth ALL - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.mtdGrwt)}</td></>}</tr>
+                                    <tr key={'allchan'+i}>{i === 0 && <td rowSpan={chanAllArr.length} className="font-bold bg-white text-center text-base">PHG & CHG</td>}<td className="text-left font-semibold">{r.cluster}</td>{viewMode === 'YTD' ? <><td className="text-right">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.avgYtd25)}</td><td className="text-right text-blue-700 font-semibold">{formatCurr(r.avgYtd26)}</td><td className={`text-center ${cGrw(r.avgGrwt)}`} style={r.avgGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.avgGrwt < 0 ? () => handleRsClick(r.avgGrwt, 'Avg Growth PHG&CHG - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.avgGrwt)}</td><td className={`text-center ${cGrw(r.ytdGrwt)}`} style={r.ytdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.ytdGrwt < 0 ? () => handleRsClick(r.ytdGrwt, 'YTD Growth PHG&CHG - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.ytdGrwt)}</td></> : <><td className="text-right">{formatCurr(r.mtd25)}</td><td className="text-right text-blue-700 font-semibold">{formatCurr(r.mtd26)}</td><td className={`text-center ${cGrw(r.mtdGrwt)}`} style={r.mtdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.mtdGrwt < 0 ? () => handleRsClick(r.mtdGrwt, 'MTD Growth PHG&CHG - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.mtdGrwt)}</td></>}</tr>
                                 ))}
+                                <tr><td colSpan="7" className="border-none h-2"></td></tr>
                                 <tr className="total-row !bg-yellow-300"><td colSpan="2" className="text-left font-black">GRAND TOTAL</td>{viewMode === 'YTD' ? <><td className="text-right font-black">{formatCurr(chanGrandTot.avg25)}</td><td className="text-right font-black">{formatCurr(chanGrandTot.avgYtd25)}</td><td className="text-right font-black text-blue-900">{formatCurr(chanGrandTot.avgYtd26)}</td><td className={`text-center font-black ${cGrw(chanGrandTot.avgGrwt)}`}>{fGrw(chanGrandTot.avgGrwt)}</td><td className={`text-center font-black ${cGrw(chanGrandTot.ytdGrwt)}`}>{fGrw(chanGrandTot.ytdGrwt)}</td></> : <><td className="text-right font-black">{formatCurr(chanGrandTot.mtd25)}</td><td className="text-right font-black text-blue-900">{formatCurr(chanGrandTot.mtd26)}</td><td className={`text-center font-black ${cGrw(chanGrandTot.mtdGrwt)}`}>{fGrw(chanGrandTot.mtdGrwt)}</td></>}</tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="bg-white p-3 shadow-md w-full overflow-x-auto mt-6">
+                        <div className="text-center mb-2"><h2 className="header-title">Performance Gabungan PHG & CHG {viewMode} {mName} 2026</h2></div>
+                        <table className="excel-table w-full">
+                            <thead>
+                                {viewMode === 'YTD' ? (
+                                    <tr><th>Cluster</th><th>Avg 2025</th><th>Avg YTD 2025</th><th>Avg YTD 2026</th><th>Avg Growth</th><th>YTD Growth</th></tr>
+                                ) : (
+                                    <tr><th>Cluster</th><th>MTD {mName} 2025</th><th>MTD {mName} 2026</th><th>MTD Growth</th></tr>
+                                )}
+                            </thead>
+                            <tbody>
+                                {chanAllArr.map((r, i) => (
+                                    <tr key={'allchan'+i}><td className="text-left font-semibold">{r.cluster}</td>{viewMode === 'YTD' ? <><td className="text-right">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.avgYtd25)}</td><td className="text-right text-blue-700 font-semibold">{formatCurr(r.avgYtd26)}</td><td className={`text-center ${cGrw(r.avgGrwt)}`} style={r.avgGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.avgGrwt < 0 ? () => handleRsClick(r.avgGrwt, 'Avg Growth PHG&CHG - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.avgGrwt)}</td><td className={`text-center ${cGrw(r.ytdGrwt)}`} style={r.ytdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.ytdGrwt < 0 ? () => handleRsClick(r.ytdGrwt, 'YTD Growth PHG&CHG - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.ytdGrwt)}</td></> : <><td className="text-right">{formatCurr(r.mtd25)}</td><td className="text-right text-blue-700 font-semibold">{formatCurr(r.mtd26)}</td><td className={`text-center ${cGrw(r.mtdGrwt)}`} style={r.mtdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.mtdGrwt < 0 ? () => handleRsClick(r.mtdGrwt, 'MTD Growth PHG&CHG - ' + r.cluster, 'cluster', r.cluster) : undefined}>{fGrw(r.mtdGrwt)}</td></>}</tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
@@ -1233,6 +1251,9 @@
         };
 
         const SummaryView = ({ apiData, month }) => {
+            const [filterBizType, setFilterBizType] = useState('ALL');
+            const [filterBrand, setFilterBrand] = useState('ALL');
+            
             const summaryData = useMemo(() => {
                 if (!apiData) return null;
                 const target2026 = apiData.target2026 || []; const sales2026 = apiData.sales2026 || []; const sales2025 = apiData.sales2025 || [];
@@ -1245,9 +1266,26 @@
                 const kBrand = ['brand', 'sub_brand', 'sub brand']; const kChan = ['cluster', 'channel', 'grup', 'tipe outlet'];
                 const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust', 'outlet'];
 
+                // Filter function
+                const fb = filterBizType; const fbr = filterBrand;
+                const isRowFiltered = (r) => {
+                    let biz = detectBizType(r);
+                    let brand = String(getVal(r, kBrand) || '').trim().toUpperCase();
+                    let passBiz = (fb === 'ALL') || (biz === fb);
+                    let passBrand = (fbr === 'ALL') || (brand === fbr);
+                    return passBiz && passBrand;
+                };
+
+                // Kumpulkan daftar brand untuk dropdown filter
+                let brandSet = new Set();
+                const collectBrand = (arr) => { if(!arr) return; arr.forEach(r => { let b = String(getVal(r, kBrand) || '').trim().toUpperCase(); if(b && b !== 'UNASSIGNED' && b !== '') brandSet.add(b); }); };
+                collectBrand(apiData.sales2026); collectBrand(apiData.sales2025);
+                const brandList = Array.from(brandSet).sort();
+
                 let dMap = { biz: { PHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 }, CHG: { q_projM: 0, q_fy: 0, a_mtd: 0, ytd26_m: 0, ytd25_m: 0, a25_fy: 0 } }, cluster: {}, brand: {}, outlet: {} };
 
                 target2026.forEach(r => {
+                    if(!isRowFiltered(r)) return;
                     let biz = detectBizType(r); if(biz==='UNKNOWN') return;
                     let val = parseNum(getVal(r, ['target', 'quota', 'sum of quota'])); let blnRaw = getVal(r, kBulan);
                     if (blnRaw) { let bln = parseInt(blnRaw); if (bln === projM) dMap.biz[biz].q_projM += val; dMap.biz[biz].q_fy += val; } 
@@ -1258,6 +1296,7 @@
                 });
 
                 sales2026.forEach(r => {
+                    if(!isRowFiltered(r)) return;
                     let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
                     let biz = detectBizType(r); let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase(); let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase(); let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase(); let sales = parseNum(getVal(r, kSales));
                     if(dMap.biz[biz]) { if(bln === m) dMap.biz[biz].a_mtd += sales; if(bln <= m) dMap.biz[biz].ytd26_m += sales; }
@@ -1269,6 +1308,7 @@
                 });
 
                 sales2025.forEach(r => {
+                    if(!isRowFiltered(r)) return;
                     let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
                     let biz = detectBizType(r); let brand = String(getVal(r, kBrand) || 'UNASSIGNED').trim().toUpperCase(); let chan = String(getVal(r, kChan) || 'UNASSIGNED').trim().toUpperCase(); let outlet = String(getVal(r, kCustName) || 'UNASSIGNED').trim().toUpperCase(); let sales = parseNum(getVal(r, kSales));
                     if(dMap.biz[biz]) { dMap.biz[biz].a25_fy += sales; if(bln <= m) dMap.biz[biz].ytd25_m += sales; }
@@ -1307,14 +1347,34 @@
                 const brandEval = Object.keys(dMap.brand).map(k => { let d = dMap.brand[k]; return { name: k, grwt: calcGrowth(d.y26, d.y25_m) }; }).filter(d => d.grwt < 0).sort((a,b) => a.grwt - b.grwt);
                 const outletEval = Object.keys(dMap.outlet).map(k => { let d = dMap.outlet[k]; return { name: k, grwt: calcGrowth(d.y26, d.y25_m), y25_m: d.y25_m }; }).filter(d => d.grwt < 0 && d.y25_m > 0).sort((a,b) => a.grwt - b.grwt);
 
-                return { chgProj, phgProj, totalQProj, totalEst, totalAchEst, totalGrwtAvg, totalGrwtYtd, bizEval, clusterEval, brandEval, outletEval, m, mName, projMName };
-            }, [apiData, month]);
+                return { chgProj, phgProj, totalQProj, totalEst, totalAchEst, totalGrwtAvg, totalGrwtYtd, bizEval, clusterEval, brandEval, outletEval, m, mName, projMName, brandList };
+            }, [apiData, month, filterBizType, filterBrand]);
 
             if (!apiData || !summaryData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
                     <div className="bg-white p-6 border shadow-md w-full">
+                        <div className="bg-slate-50 p-3 border border-gray-300 rounded-lg mb-6 flex flex-wrap gap-4 items-center justify-center no-print">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-gray-700 uppercase">Business Type:</span>
+                                <select value={filterBizType} onChange={(e) => setFilterBizType(e.target.value)} className="border-2 border-blue-400 rounded p-1.5 text-xs font-bold bg-white">
+                                    <option value="ALL">ALL</option>
+                                    <option value="PHG">PHG</option>
+                                    <option value="CHG">CHG</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-gray-700 uppercase">Brand:</span>
+                                <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="border-2 border-orange-400 rounded p-1.5 text-xs font-bold bg-white max-w-[250px]">
+                                    <option value="ALL">ALL BRANDS</option>
+                                    {summaryData.brandList.map((b, i) => <option key={i} value={b}>{b}</option>)}
+                                </select>
+                            </div>
+                            {(filterBizType !== 'ALL' || filterBrand !== 'ALL') && (
+                                <button onClick={() => { setFilterBizType('ALL'); setFilterBrand('ALL'); }} className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-xs font-bold rounded">Reset Filter</button>
+                            )}
+                        </div>
                         <div className="text-center mb-6">
                             <h2 className="header-title !text-xl !px-12">SALES PROJECTION - BULAN {summaryData.projMName.toUpperCase()} 2026</h2>
                             <p className="text-xs text-gray-500 font-semibold italic">Metode: EST = Rata-rata YTD (Total Sales YTD dibagi {summaryData.m} bulan berjalan) per Divisi PHG dan CHG. Jika EST kurang dari Target maka EST = Target + 2 persen</p>
@@ -1330,7 +1390,7 @@
                             </tbody>
                         </table>
                         <div className="bg-red-50 border-2 border-red-300 p-6 rounded-lg max-w-5xl mx-auto shadow-sm w-full">
-                            <h3 className="text-red-800 font-black text-lg mb-3 border-b border-red-200 pb-2 flex items-center gap-2"><span>🚨</span> EXECUTIVE EVALUATION (SUMMARY NEGATIVE PERFORMANCE DECLINE)</h3>
+                            <h3 className="text-red-800 font-black text-lg mb-3 border-b border-red-200 pb-2 flex items-center gap-2"><span className="inline-flex items-center justify-center w-5 h-5 bg-red-600 rounded-full text-white text-xs font-bold">!</span> EXECUTIVE EVALUATION (SUMMARY NEGATIVE PERFORMANCE DECLINE)</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4 w-full">
                                 <div className="bg-white p-3 border border-red-200 rounded">
                                     <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Business Type Minus:</h4>
@@ -1360,7 +1420,86 @@
 
         const ParetoBrandView = ({ apiData, month }) => {
             const [selectedDist, setSelectedDist] = useState('ALL');
-            const [viewMode, setViewMode] = useState('YTD'); 
+            const [viewMode, setViewMode] = useState('YTD');
+            const [showBrandModal, setShowBrandModal] = useState(false);
+            const [brandModalData, setBrandModalData] = useState([]);
+            const [brandModalTitle, setBrandModalTitle] = useState(''); 
+
+            const handleBrandClick = (brandName, bizType, grwtType, grwtVal) => {
+                const sales2026 = apiData.sales2026 || [];
+                const sales2025 = apiData.sales2025 || [];
+                const m = parseInt(month) || 1;
+                const kBulan = ['bulan', 'month'];
+                const kSales = ['sales', 'value', 'amount', 'total'];
+                const kCustCode = ['customer code', 'cust code', 'kode pelanggan'];
+                const kCustName = ['customer name', 'nama pelanggan', 'nama outlet'];
+                const kDist = ['distributor', 'dist'];
+                const kBrand = ['brand', 'sub_brand', 'sub brand'];
+                const kProd = ['product name', 'nama produk', 'material'];
+                let map25 = {};
+                let map26 = {};
+                const matchBrand = (r) => {
+                    let dist = String(getVal(r, kDist) || 'APL').toUpperCase();
+                    let matchDist = true;
+                    if(selectedDist === 'APL' && !dist.includes('APL') && !dist.includes('ANUGERAH')) matchDist = false;
+                    if(selectedDist === 'KFT' && (dist.includes('APL') || dist.includes('ANUGERAH'))) matchDist = false;
+                    if (!matchDist) return false;
+                    let biz = detectBizType(r);
+                    if (biz !== bizType) return false;
+                    let brand = String(getVal(r, kBrand) || '').trim().toUpperCase();
+                    return brand === brandName.toUpperCase();
+                };
+                sales2025.forEach(r => {
+                    if (!matchBrand(r)) return;
+                    let bln = parseInt(getVal(r, kBulan)); if (!bln) return;
+                    if (grwtType === 'mtd' && bln !== m) return;
+                    if (grwtType === 'ytd' && bln > m) return;
+                    let code = String(getVal(r, kCustCode) || '').trim();
+                    let name = String(getVal(r, kCustName) || code || '').trim().toUpperCase();
+                    let dist = String(getVal(r, kDist) || 'OTHERS').toUpperCase();
+                    let prod = String(getVal(r, kProd) || '-').trim().toUpperCase();
+                    let sales = parseNum(getVal(r, kSales));
+                    let key = (code || name) + '|' + prod;
+                    if (!code && !name) return;
+                    if (!map25[key]) map25[key] = { code, name, dist, prod, sales: 0 };
+                    map25[key].sales += sales;
+                });
+                sales2026.forEach(r => {
+                    if (!matchBrand(r)) return;
+                    let bln = parseInt(getVal(r, kBulan)); if (!bln) return;
+                    if (grwtType === 'mtd' && bln !== m) return;
+                    if (grwtType === 'ytd' && bln > m) return;
+                    let code = String(getVal(r, kCustCode) || '').trim();
+                    let name = String(getVal(r, kCustName) || code || '').trim().toUpperCase();
+                    let prod = String(getVal(r, kProd) || '-').trim().toUpperCase();
+                    let sales = parseNum(getVal(r, kSales));
+                    let key = (code || name) + '|' + prod;
+                    if (!code && !name) return;
+                    if (!map26[key]) map26[key] = { sales: 0 };
+                    map26[key].sales += sales;
+                });
+                let details = [];
+                Object.keys(map25).forEach(key => {
+                    let ly = map25[key].sales || 0;
+                    let cy = map26[key] ? map26[key].sales : 0;
+                    let diff = cy - ly;
+                    if (diff < 0) {
+                        details.push({
+                            code: map25[key].code || '-',
+                            name: map25[key].name || '-',
+                            dist: map25[key].dist || '-',
+                            prod: map25[key].prod || '-',
+                            lySales: ly,
+                            cySales: cy,
+                            diff: diff
+                        });
+                    }
+                });
+                details.sort((a, b) => a.diff - b.diff);
+                setBrandModalData(details);
+                setBrandModalTitle(bizType + ' - ' + brandName + ' (' + grwtType.toUpperCase() + ' Growth: ' + grwtVal + '%)');
+                setShowBrandModal(true);
+            };
 
             const paretoData = useMemo(() => {
                 if (!apiData) return null;
@@ -1448,7 +1587,7 @@
                                 {paretoData.chg.map((r, i) => (
                                     <tr key={'pchg'+i} className="hover:bg-gray-50">
                                         <td className="text-center bg-gray-100 font-bold text-gray-700">CHG</td><td className="text-left text-gray-600">{r.div}</td><td className="text-left font-black text-gray-800">{r.brand}</td>
-                                        {viewMode === 'YTD' ? ( <><td className="text-right">{formatCurr(r.f25)}</td><td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.y25)}</td><td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td><td className="text-right font-black text-blue-700 bg-orange-50/30">{formatCurr(r.y26)}</td><td className="text-right bg-blue-50 font-bold bg-orange-50/30">{formatCurr(r.avgYtd26)}</td><td className={`text-center font-bold ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td><td className={`text-center font-bold ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td></> ) : ( <><td className="text-right text-gray-500">{formatCurr(r.mtd25)}</td><td className="text-right font-black text-blue-700 bg-orange-50/30">{formatCurr(r.mtd26)}</td><td className={`text-center font-bold ${cGrw(r.mtdGrwt)}`}>{fGrw(r.mtdGrwt)}</td></> )}
+                                        {viewMode === 'YTD' ? ( <><td className="text-right">{formatCurr(r.f25)}</td><td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.y25)}</td><td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td><td className="text-right font-black text-blue-700 bg-orange-50/30">{formatCurr(r.y26)}</td><td className="text-right bg-blue-50 font-bold bg-orange-50/30">{formatCurr(r.avgYtd26)}</td><td className={`text-center font-bold ${cGrw(r.avgGrwt)}`} style={r.avgGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.avgGrwt < 0 ? () => handleBrandClick(r.brand, 'CHG', 'avg', r.avgGrwt) : undefined}>{fGrw(r.avgGrwt)}</td><td className={`text-center font-bold ${cGrw(r.ytdGrwt)}`} style={r.ytdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.ytdGrwt < 0 ? () => handleBrandClick(r.brand, 'CHG', 'ytd', r.ytdGrwt) : undefined}>{fGrw(r.ytdGrwt)}</td></> ) : ( <><td className="text-right text-gray-500">{formatCurr(r.mtd25)}</td><td className="text-right font-black text-blue-700 bg-orange-50/30">{formatCurr(r.mtd26)}</td><td className={`text-center font-bold ${cGrw(r.mtdGrwt)}`} style={r.mtdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.mtdGrwt < 0 ? () => handleBrandClick(r.brand, 'CHG', 'mtd', r.mtdGrwt) : undefined}>{fGrw(r.mtdGrwt)}</td></> )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -1468,18 +1607,132 @@
                                 {paretoData.phg.map((r, i) => (
                                     <tr key={'pphg'+i} className="hover:bg-gray-50">
                                         <td className="text-center bg-gray-100 font-bold text-gray-700">PHG</td><td className="text-left text-gray-600">{r.div}</td><td className="text-left font-black text-gray-800">{r.brand}</td>
-                                        {viewMode === 'YTD' ? ( <><td className="text-right">{formatCurr(r.f25)}</td><td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.y25)}</td><td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td><td className="text-right font-black text-blue-700 bg-orange-50/30">{formatCurr(r.y26)}</td><td className="text-right bg-blue-50 font-bold bg-orange-50/30">{formatCurr(r.avgYtd26)}</td><td className={`text-center font-bold ${cGrw(r.avgGrwt)}`}>{fGrw(r.avgGrwt)}</td><td className={`text-center font-bold ${cGrw(r.ytdGrwt)}`}>{fGrw(r.ytdGrwt)}</td></> ) : ( <><td className="text-right text-gray-500">{formatCurr(r.mtd25)}</td><td className="text-right font-black text-blue-700 bg-orange-50/30">{formatCurr(r.mtd26)}</td><td className={`text-center font-bold ${cGrw(r.mtdGrwt)}`}>{fGrw(r.mtdGrwt)}</td></> )}
+                                        {viewMode === 'YTD' ? ( <><td className="text-right">{formatCurr(r.f25)}</td><td className="text-right bg-yellow-50">{formatCurr(r.avg25)}</td><td className="text-right">{formatCurr(r.y25)}</td><td className="text-right bg-yellow-50">{formatCurr(r.avgYtd25)}</td><td className="text-right font-black text-blue-700 bg-orange-50/30">{formatCurr(r.y26)}</td><td className="text-right bg-blue-50 font-bold bg-orange-50/30">{formatCurr(r.avgYtd26)}</td><td className={`text-center font-bold ${cGrw(r.avgGrwt)}`} style={r.avgGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.avgGrwt < 0 ? () => handleBrandClick(r.brand, 'PHG', 'avg', r.avgGrwt) : undefined}>{fGrw(r.avgGrwt)}</td><td className={`text-center font-bold ${cGrw(r.ytdGrwt)}`} style={r.ytdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.ytdGrwt < 0 ? () => handleBrandClick(r.brand, 'PHG', 'ytd', r.ytdGrwt) : undefined}>{fGrw(r.ytdGrwt)}</td></> ) : ( <><td className="text-right text-gray-500">{formatCurr(r.mtd25)}</td><td className="text-right font-black text-blue-700 bg-orange-50/30">{formatCurr(r.mtd26)}</td><td className={`text-center font-bold ${cGrw(r.mtdGrwt)}`} style={r.mtdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.mtdGrwt < 0 ? () => handleBrandClick(r.brand, 'PHG', 'mtd', r.mtdGrwt) : undefined}>{fGrw(r.mtdGrwt)}</td></> )}
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
+                    {showBrandModal && brandModalData.length > 0 && (
+                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 no-print" onClick={() => setShowBrandModal(false)}>
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                                <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 rounded-t-2xl flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-lg font-black">Detail Penurunan Sales - Brand</h3>
+                                        <p className="text-xs text-red-100 mt-1">{brandModalTitle} | Total: {brandModalData.length} item</p>
+                                    </div>
+                                    <button onClick={() => setShowBrandModal(false)} className="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">X</button>
+                                </div>
+                                <div className="p-4 overflow-y-auto flex-1">
+                                    <table className="excel-table w-full">
+                                        <thead className="sticky top-0 shadow z-10">
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Kode Outlet</th>
+                                                <th className="text-left">Nama Outlet</th>
+                                                <th>Distributor</th>
+                                                <th className="text-left">Nama Produk</th>
+                                                <th className="text-right">Sales LY</th>
+                                                <th className="text-right">Sales CY</th>
+                                                <th className="text-right">Selisih</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {brandModalData.map((r, i) => (
+                                                <tr key={i} className="hover:bg-red-50">
+                                                    <td className="text-center text-xs">{i + 1}</td>
+                                                    <td className="text-center font-bold text-blue-900 text-xs">{r.code}</td>
+                                                    <td className="text-left font-semibold text-xs">{r.name}</td>
+                                                    <td className="text-center text-xs">{r.dist}</td>
+                                                    <td className="text-left text-xs">{r.prod}</td>
+                                                    <td className="text-right text-xs">{formatCurr(r.lySales)}</td>
+                                                    <td className="text-right text-xs">{formatCurr(r.cySales)}</td>
+                                                    <td className="text-right font-black text-red-600 text-xs">{formatCurr(r.diff)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="bg-gray-50 p-3 rounded-b-2xl border-t flex justify-end">
+                                    <button onClick={() => setShowBrandModal(false)} className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg text-sm">Tutup</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
 
         const CityView = ({ apiData, month }) => {
-            const [viewMode, setViewMode] = useState('YTD'); 
+            const [viewMode, setViewMode] = useState('YTD');
+            const [showCityModal, setShowCityModal] = useState(false);
+            const [cityModalData, setCityModalData] = useState([]);
+            const [cityModalTitle, setCityModalTitle] = useState(''); 
+            const handleCityClick = (cityName, grwtType, grwtVal) => {
+                const sales2026 = apiData.sales2026 || [];
+                const sales2025 = apiData.sales2025 || [];
+                const m = parseInt(month) || 1;
+                const kBulan = ['bulan', 'month'];
+                const kSales = ['sales', 'value', 'amount', 'total'];
+                const kCustCode = ['customer code', 'cust code', 'kode pelanggan'];
+                const kCustName = ['customer name', 'nama pelanggan', 'nama outlet'];
+                const kDist = ['distributor', 'dist'];
+                const kCity = ['city', 'kota', 'kabupaten', 'area'];
+                let map25 = {};
+                let map26 = {};
+                const matchCity = (r) => {
+                    let city = String(getVal(r, kCity) || '').toUpperCase();
+                    return city === cityName.toUpperCase();
+                };
+                sales2025.forEach(r => {
+                    if (!matchCity(r)) return;
+                    let bln = parseInt(getVal(r, kBulan)); if (!bln) return;
+                    if (grwtType === 'mtd' && bln !== m) return;
+                    if (grwtType === 'ytd' && bln > m) return;
+                    let code = String(getVal(r, kCustCode) || '').trim();
+                    let name = String(getVal(r, kCustName) || code || '').trim().toUpperCase();
+                    let dist = String(getVal(r, kDist) || 'OTHERS').toUpperCase();
+                    let sales = parseNum(getVal(r, kSales));
+                    let key = code || name;
+                    if (!key) return;
+                    if (!map25[key]) map25[key] = { code, name, dist, sales: 0 };
+                    map25[key].sales += sales;
+                });
+                sales2026.forEach(r => {
+                    if (!matchCity(r)) return;
+                    let bln = parseInt(getVal(r, kBulan)); if (!bln) return;
+                    if (grwtType === 'mtd' && bln !== m) return;
+                    if (grwtType === 'ytd' && bln > m) return;
+                    let code = String(getVal(r, kCustCode) || '').trim();
+                    let name = String(getVal(r, kCustName) || code || '').trim().toUpperCase();
+                    let sales = parseNum(getVal(r, kSales));
+                    let key = code || name;
+                    if (!key) return;
+                    if (!map26[key]) map26[key] = { sales: 0 };
+                    map26[key].sales += sales;
+                });
+                let details = [];
+                Object.keys(map25).forEach(key => {
+                    let ly = map25[key].sales || 0;
+                    let cy = map26[key] ? map26[key].sales : 0;
+                    let diff = cy - ly;
+                    if (diff < 0) {
+                        details.push({
+                            code: map25[key].code || '-',
+                            name: map25[key].name || '-',
+                            dist: map25[key].dist || '-',
+                            lySales: ly,
+                            cySales: cy,
+                            diff: diff
+                        });
+                    }
+                });
+                details.sort((a, b) => a.diff - b.diff);
+                setCityModalData(details);
+                setCityModalTitle(cityName + ' (' + grwtType.toUpperCase() + ' Growth: ' + grwtVal + '%)');
+                setShowCityModal(true);
+            };
+
             const cMapData = useMemo(() => {
                 if (!apiData) return null;
                 const sales2026 = apiData.sales2026 || [];
@@ -1545,15 +1798,17 @@
                             {cMapData.cityArr.map((r, i) => {
                                 let val = viewMode === 'MTD' ? r.mtd26 : r.y26;
                                 let share = cMapData.totalCityVal > 0 ? Math.round((val/cMapData.totalCityVal)*100) : 0;
+                                let mainGrwt = viewMode === 'MTD' ? r.mtdGrwt : r.avgGrwt;
+                                let isMinus = mainGrwt < 0;
                                 return (
-                                    <div key={i} className="city-card">
-                                        <div className="city-logo">🌆</div>
+                                    <div key={i} className={`city-card ${isMinus ? 'cursor-pointer hover:border-red-500 hover:bg-red-50' : ''}`} style={isMinus ? {cursor: 'pointer'} : {}} onClick={isMinus ? () => handleCityClick(r.city, viewMode === 'MTD' ? 'mtd' : 'avg', mainGrwt) : undefined}>
+                                        <div className="city-logo">{isMinus ? '⚠' : '🌆'}</div>
                                         <div className="city-info">
-                                            <div className="city-title">{r.city}</div>
+                                            <div className="city-title">{r.city} {isMinus && <span className="text-red-600 text-xs ml-1">(klik detail)</span>}</div>
                                             <div className="city-stat"><span>Buss. Contr:</span> <b>{share}%</b></div>
                                             <div className="city-stat"><span>{viewMode==='MTD'?'MTD 2025':'Avg 2025'}:</span> <b>Rp {formatCurr(viewMode==='MTD'?r.mtd25:r.avg25)}</b></div>
-                                            <div className="city-stat"><span>{viewMode==='MTD'?'MTD':'Avg'} Growth:</span> <b className={cGrw(viewMode==='MTD'?r.mtdGrwt:r.avgGrwt)}>{fGrw(viewMode==='MTD'?r.mtdGrwt:r.avgGrwt)}</b></div>
-                                            {viewMode==='YTD' && <div className="city-stat"><span>YTD Growth:</span> <b className={cGrw(r.ytdGrwt)}>{fGrw(r.ytdGrwt)}</b></div>}
+                                            <div className="city-stat"><span>{viewMode==='MTD'?'MTD':'Avg'} Growth:</span> <b className={cGrw(mainGrwt)} style={isMinus ? {cursor: 'pointer', textDecoration: 'underline'} : {}}>{fGrw(mainGrwt)}</b></div>
+                                            {viewMode==='YTD' && <div className="city-stat"><span>YTD Growth:</span> <b className={cGrw(r.ytdGrwt)} style={r.ytdGrwt < 0 ? {cursor: 'pointer', textDecoration: 'underline'} : {}} onClick={r.ytdGrwt < 0 ? (e) => {e.stopPropagation(); handleCityClick(r.city, 'ytd', r.ytdGrwt);} : undefined}>{fGrw(r.ytdGrwt)}</b></div>}
                                             <div className="city-stat"><span>Reach:</span> <b>{viewMode==='MTD'?r.reachMtd:r.reach} Outlets</b></div>
                                         </div>
                                     </div>
@@ -1614,6 +1869,50 @@
                             </div>
                         </div>
                     </div>
+                    {showCityModal && cityModalData.length > 0 && (
+                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 no-print" onClick={() => setShowCityModal(false)}>
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                                <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 rounded-t-2xl flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-lg font-black">Detail Penurunan Sales - Kota/Kabupaten</h3>
+                                        <p className="text-xs text-red-100 mt-1">{cityModalTitle} | Total: {cityModalData.length} outlet</p>
+                                    </div>
+                                    <button onClick={() => setShowCityModal(false)} className="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">X</button>
+                                </div>
+                                <div className="p-4 overflow-y-auto flex-1">
+                                    <table className="excel-table w-full">
+                                        <thead className="sticky top-0 shadow z-10">
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Kode Outlet</th>
+                                                <th className="text-left">Nama Outlet</th>
+                                                <th>Distributor</th>
+                                                <th className="text-right">Sales LY</th>
+                                                <th className="text-right">Sales CY</th>
+                                                <th className="text-right">Selisih (Minus)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {cityModalData.map((r, i) => (
+                                                <tr key={i} className="hover:bg-red-50">
+                                                    <td className="text-center text-xs">{i + 1}</td>
+                                                    <td className="text-center font-bold text-blue-900 text-xs">{r.code}</td>
+                                                    <td className="text-left font-semibold text-xs">{r.name}</td>
+                                                    <td className="text-center text-xs">{r.dist}</td>
+                                                    <td className="text-right text-xs">{formatCurr(r.lySales)}</td>
+                                                    <td className="text-right text-xs">{formatCurr(r.cySales)}</td>
+                                                    <td className="text-right font-black text-red-600 text-xs">{formatCurr(r.diff)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="bg-gray-50 p-3 rounded-b-2xl border-t flex justify-end">
+                                    <button onClick={() => setShowCityModal(false)} className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg text-sm">Tutup</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
