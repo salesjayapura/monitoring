@@ -191,7 +191,13 @@
             if (globalKeyCache.has(cacheKey)) { const exactKey = globalKeyCache.get(cacheKey); return exactKey ? row[exactKey] : undefined; }
             for (let i = 0; i < keys.length; i++) {
                 const lowerK = String(keys[i]).toLowerCase().replace(/_/g, ' ').trim();
-                for (let j = 0; j < keywords.length; j++) { if (lowerK.includes(keywords[j])) { globalKeyCache.set(cacheKey, keys[i]); return row[keys[i]]; } }
+                for (let j = 0; j < keywords.length; j++) { 
+                    if (lowerK.includes(keywords[j])) { 
+                        if (keywords[j] === 'brand' && lowerK.includes('sub')) continue;
+                        globalKeyCache.set(cacheKey, keys[i]); 
+                        return row[keys[i]]; 
+                    } 
+                }
             }
             globalKeyCache.set(cacheKey, null); return undefined;
         };
@@ -1263,7 +1269,7 @@
 
                 const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total']; const kBulan = ['bulan', 'month', 'bln'];
                 const kBiz = ['business', 'bisnis', 'type', 'bussines']; const kDiv = ['division', 'divisi', 'div', 'departemen'];
-                const kBrand = ['brand', 'sub_brand', 'sub brand']; const kChan = ['cluster', 'channel', 'grup', 'tipe outlet'];
+                const kBrand = ['brand']; const kChan = ['cluster', 'channel', 'grup', 'tipe outlet'];
                 const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'nama cust', 'outlet'];
 
                 // Filter function
@@ -1401,8 +1407,8 @@
                                     {summaryData.clusterEval.length === 0 ? <p className="text-xs text-green-600 font-semibold">Semua Cluster/Channel Positif.</p> : <div className="max-h-36 overflow-y-auto pr-1"><ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">{summaryData.clusterEval.map((c, i) => <li key={i}>{c.name}: <span className="float-right text-red-600">{c.grwt}%</span></li>)}</ul></div>}
                                 </div>
                                 <div className="bg-white p-3 border border-red-200 rounded">
-                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Sub Brand / Brand Minus:</h4>
-                                    {summaryData.brandEval.length === 0 ? <p className="text-xs text-green-600 font-semibold">Semua Sub Brand Positif.</p> : <div className="max-h-36 overflow-y-auto pr-1"><ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">{summaryData.brandEval.map((b, i) => <li key={i}>{b.name}: <span className="float-right text-red-600">{b.grwt}%</span></li>)}</ul></div>}
+                                    <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Brand Minus:</h4>
+                                    {summaryData.brandEval.length === 0 ? <p className="text-xs text-green-600 font-semibold">Semua Brand Positif.</p> : <div className="max-h-36 overflow-y-auto pr-1"><ul className="list-disc pl-4 text-xs text-red-700 font-bold space-y-1">{summaryData.brandEval.map((b, i) => <li key={i}>{b.name}: <span className="float-right text-red-600">{b.grwt}%</span></li>)}</ul></div>}
                                 </div>
                                 <div className="bg-white p-3 border border-red-200 rounded">
                                     <h4 className="font-bold text-gray-800 text-sm mb-2 border-b pb-1">Outlet Minus:</h4>
@@ -1410,7 +1416,7 @@
                                 </div>
                             </div>
                             <div className="mt-4 pt-3 border-t border-red-200 bg-red-100/50 p-3 rounded text-xs text-red-900 leading-relaxed font-semibold">
-                                <b>GARIS BESAR EVALUASI:</b><br/>Ditinjau dari data hingga bulan {summaryData.mName} 2026, terdapat <b>{summaryData.bizEval.length} Business Type</b>, <b>{summaryData.clusterEval.length} Cluster</b>, <b>{summaryData.brandEval.length} Sub Brand</b>, dan <b>{summaryData.outletEval.length} Outlet</b> yang mengalami pertumbuhan minus (decline). Prioritas aksi mendesak difokuskan pada pemulihan sales di segmen minus tersebut guna memastikan pencapaian target estimasi bulan {summaryData.projMName} 2026 sebesar <b>Rp {formatCurr(summaryData.totalEst)}</b> tercapai secara optimal.
+                                <b>GARIS BESAR EVALUASI:</b><br/>Ditinjau dari data hingga bulan {summaryData.mName} 2026, terdapat <b>{summaryData.bizEval.length} Business Type</b>, <b>{summaryData.clusterEval.length} Cluster</b>, <b>{summaryData.brandEval.length} Brand</b>, dan <b>{summaryData.outletEval.length} Outlet</b> yang mengalami pertumbuhan minus (decline). Prioritas aksi mendesak difokuskan pada pemulihan sales di segmen minus tersebut guna memastikan pencapaian target estimasi bulan {summaryData.projMName} 2026 sebesar <b>Rp {formatCurr(summaryData.totalEst)}</b> tercapai secara optimal.
                             </div>
                         </div>
                     </div>
@@ -1434,7 +1440,7 @@
                 const kCustCode = ['customer code', 'cust code', 'kode pelanggan'];
                 const kCustName = ['customer name', 'nama pelanggan', 'nama outlet'];
                 const kDist = ['distributor', 'dist'];
-                const kBrand = ['brand', 'sub_brand', 'sub brand'];
+                const kBrand = ['brand'];
                 const kProd = ['product name', 'nama produk', 'material'];
                 let map25 = {};
                 let map26 = {};
@@ -1510,7 +1516,7 @@
                 const kSales = ['sum of sales', 'sales', 'value', 'amount', 'total', 'ach'];
                 const kBulan = ['bulan', 'month'];
                 const kDiv = ['division', 'divisi'];
-                const kBrand = ['brand', 'sub_brand', 'sub brand']; 
+                const kBrand = ['brand']; 
                 const kDist = ['distributor', 'dist', 'principal'];
 
                 let bMap = { PHG:{}, CHG:{} };
@@ -1548,7 +1554,7 @@
                         let d = bMap[bz][k];
                         let avgYtd26 = d.y26 / m; let avg25 = d.f25 / 12; let avgYtd25 = d.y25 / m; 
                         return { brand: k, div: d.div, y26: d.y26, avgYtd26, f25: d.f25, avg25, y25: d.y25, avgYtd25, mtd26: d.mtd26, mtd25: d.mtd25, avgGrwt: calcGrowth(avgYtd26, avg25), ytdGrwt: calcGrowth(d.y26, d.y25), mtdGrwt: calcGrowth(d.mtd26, d.mtd25) };
-                    }).sort((a,b) => viewMode === 'MTD' ? (b.mtd26 - a.mtd26) : (b.y26 - a.y26)).slice(0, 10);
+                    }).sort((a,b) => b.f25 - a.f25).slice(0, 10);
                 };
 
                 return { chg: buildParetoBrand('CHG'), phg: buildParetoBrand('PHG'), mName };
