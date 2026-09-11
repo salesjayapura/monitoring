@@ -2335,8 +2335,44 @@
             const [statusFilter, setStatusFilter] = useState('ALL');
             const [searchProd, setSearchProd] = useState(''); 
             const [viewMode, setViewMode] = useState('YTD'); 
+            const [sortCol, setSortCol] = useState('scd');
+            const [sortDir, setSortDir] = useState('desc');
 
             const m = parseInt(month) || 1;
+            
+            // Fungsi normalisasi nama produk untuk mencocokkan nama yang sedikit berbeda
+            const normalizeProductName = (name) => {
+                if (!name) return '';
+                return String(name)
+                    .toUpperCase()
+                    .replace(/\s+/g, ' ')
+                    .replace(/\(.*?\)/g, '')
+                    .replace(/\bNEW\b/g, '')
+                    .replace(/\bTABLET\b/g, 'TAB')
+                    .replace(/\bCAPSULE\b/g, 'CAP')
+                    .replace(/[^\w\s]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            };
+            
+            // Fungsi mencari kunci terbaik berdasarkan nama yang dinormalisasi atau kode item
+            const findBestKey = (itemData, dist, name, code) => {
+                const originalKey = dist + '_' + name;
+                if (itemData[originalKey]) return originalKey;
+                if (code) {
+                    const codeKey = Object.keys(itemData).find(k => itemData[k].code === code);
+                    if (codeKey) return codeKey;
+                }
+                const normName = normalizeProductName(name);
+                if (!normName) return originalKey;
+                const matchedKey = Object.keys(itemData).find(k => {
+                    const existingNorm = normalizeProductName(itemData[k].name);
+                    const existingDist = k.split('_')[0];
+                    if (existingDist !== dist) return false;
+                    return existingNorm && (existingNorm.includes(normName) || normName.includes(existingNorm));
+                });
+                return matchedKey || originalKey;
+            };
 
             const tableData = useMemo(() => {
                 if (!apiData) return [];
@@ -2397,7 +2433,7 @@
                     
                     let salesVal = parseNum(getVal(r, kSales)); let salesQty = parseNum(getVal(r, kQty)); let hnaVal = parseNum(getVal(r, kHna));
 
-                    let key = dist + '_' + name;
+                    let key = findBestKey(itemData, dist, name, code);
                     if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
                     
                     itemData[key].ytdSalesRp += salesVal; itemData[key].ytdQty += salesQty;
@@ -2415,7 +2451,7 @@
 
                     let stockUnit = parseNum(getVal(r, kStockValue)); let hnaVal = parseNum(getVal(r, kHna));
 
-                    let key = dist + '_' + name;
+                    let key = findBestKey(itemData, dist, name, code);
                     if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
 
                     itemData[key].stockUnit += stockUnit; if(hnaVal > 0) itemData[key].lastHna = hnaVal;
@@ -2446,15 +2482,37 @@
                     let estEOYValue = orderForEOY * estimatedPrice;
 
                     return { ...d, estimatedPrice, avgMonthlySalesUnit, scd, requiredStockUnit, status, color, stockValue, requiredStockValue, orderForEOY, estEOYValue };
-                }).sort((a,b) => b.scd - a.scd).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetFy > 0 || d.ytdSalesRp > 0);
+                }).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetFy > 0 || d.ytdSalesRp > 0);
             }, [apiData, m, viewMode]);
 
             if (!apiData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
-            const filteredData = tableData.filter(r => 
+            const handleSort = (col) => {
+                if (sortCol === col) {
+                    setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+                } else {
+                    setSortCol(col);
+                    setSortDir('desc');
+                }
+            };
+            
+            const SortIcon = ({ col }) => {
+                if (sortCol !== col) return <span className="ml-1 text-gray-400 font-normal">⇅</span>;
+                return <span className="ml-1 text-orange-600 font-black">{sortDir === 'asc' ? '▲' : '▼'}</span>;
+            };
+            
+            const numericCols = ['targetMtd', 'targetYtd', 'ytdSalesRp', 'targetFy', 'avgMonthlySalesUnit', 'stockUnit', 'stockValue', 'scd', 'requiredStockUnit', 'requiredStockValue', 'orderForEOY'];
+            
+            const filteredData = [...tableData].filter(r => 
                 (statusFilter === 'ALL' || r.status.toUpperCase() === statusFilter) &&
                 (searchProd === '' || String(r.name).toLowerCase().includes(searchProd.toLowerCase()))
-            );
+            ).sort((a, b) => {
+                let valA = a[sortCol] || 0;
+                let valB = b[sortCol] || 0;
+                if (typeof valA === 'string') valA = parseNum(valA);
+                if (typeof valB === 'string') valB = parseNum(valB);
+                return sortDir === 'asc' ? valA - valB : valB - valA;
+            });
 
             const fSum = { targetMtd: 0, targetYtd: 0, ytdSalesRp: 0, targetFy: 0, avgMonthlySalesUnit: 0, stockUnit: 0, stockVal: 0, reqUnit: 0, reqVal: 0, eoyUnit: 0, eoyVal: 0 };
             filteredData.forEach(d => {
@@ -2493,10 +2551,18 @@
                                 <thead className="sticky top-0 shadow">
                                     <tr>
                                         <th>Dist</th><th>Nama Produk</th>
-                                        <th className="text-right">Target MTD (Rp)</th><th className="text-right">Target YTD (Rp)</th><th className="text-right text-blue-800">Omset YTD (Rp)</th><th className="text-right">Target FY (Rp)</th>
-                                        <th className="text-right">Avg Sales /Bln (Unit)</th><th className="text-right bg-blue-50">Stok Saat Ini (Unit)</th><th className="text-right bg-blue-50">Value Stok (Rp)</th>
-                                        <th className="text-center">SCD</th><th className="text-center">Status</th>
-                                        <th className="text-right bg-orange-50 text-red-700">Stok Kurang 60 Hr (Unit)</th><th className="text-right bg-orange-50 text-red-700">Value Kurang (Rp)</th><th className="text-right bg-green-50 text-green-800">Est Beli s/d Akhir Thn (Unit)</th>
+                                        <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('targetMtd')}>Target MTD (Rp)<SortIcon col="targetMtd" /></th>
+                                        <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('targetYtd')}>Target YTD (Rp)<SortIcon col="targetYtd" /></th>
+                                        <th className="text-right text-blue-800 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('ytdSalesRp')}>Omset YTD (Rp)<SortIcon col="ytdSalesRp" /></th>
+                                        <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('targetFy')}>Target FY (Rp)<SortIcon col="targetFy" /></th>
+                                        <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('avgMonthlySalesUnit')}>Avg Sales /Bln (Unit)<SortIcon col="avgMonthlySalesUnit" /></th>
+                                        <th className="text-right bg-blue-50 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('stockUnit')}>Stok Saat Ini (Unit)<SortIcon col="stockUnit" /></th>
+                                        <th className="text-right bg-blue-50 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('stockValue')}>Value Stok (Rp)<SortIcon col="stockValue" /></th>
+                                        <th className="text-center cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('scd')}>SCD<SortIcon col="scd" /></th>
+                                        <th className="text-center">Status</th>
+                                        <th className="text-right bg-orange-50 text-red-700 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('requiredStockUnit')}>Stok Kurang 60 Hr (Unit)<SortIcon col="requiredStockUnit" /></th>
+                                        <th className="text-right bg-orange-50 text-red-700 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('requiredStockValue')}>Value Kurang (Rp)<SortIcon col="requiredStockValue" /></th>
+                                        <th className="text-right bg-green-50 text-green-800 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('orderForEOY')}>Est Beli s/d Akhir Thn (Unit)<SortIcon col="orderForEOY" /></th>
                                     </tr>
                                 </thead>
                                 <tbody>
