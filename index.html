@@ -1926,6 +1926,9 @@
         const OutletAnalysisView = ({ apiData, month }) => {
             const [viewMode, setViewMode] = useState('MTD');
             const [showLossModal, setShowLossModal] = useState(false); 
+            const [showProductModal, setShowProductModal] = useState(false);
+            const [productModalData, setProductModalData] = useState([]);
+            const [productModalTitle, setProductModalTitle] = useState('');
             
             const oaData = useMemo(() => {
                 if (!apiData) return null;
@@ -1989,6 +1992,146 @@
                 return { lossAPL, totalAPL, lossKFT, totalKFT };
             }, [oaData, viewMode]);
 
+
+            const handleProductClick = (outletCode, outletName, dist) => {
+                try {
+                    console.log('=== handleProductClick DIPANGGIL ===');
+                    console.log('outletCode:', outletCode, 'outletName:', outletName, 'dist:', dist);
+                    console.log('viewMode:', viewMode);
+                    console.log('apiData available:', !!apiData);
+                    
+                    if (!apiData) {
+                        setProductModalData([]);
+                        setProductModalTitle('Error: Data API tidak tersedia');
+                        setShowProductModal(true);
+                        return;
+                    }
+                    
+                    const sales2026 = apiData.sales2026 || [];
+                    const sales2025 = apiData.sales2025 || [];
+                    const m = parseInt(month) || 1;
+                    
+                    console.log('sales2025 length:', sales2025.length);
+                    console.log('sales2026 length:', sales2026.length);
+                    console.log('month:', m);
+                    
+                    const kBulan = ['bulan', 'month'];
+                    const kSales = ['sales', 'value', 'amount', 'total'];
+                    const kCustCode = ['customer code', 'cust code', 'kode pelanggan', 'custcode'];
+                    const kCustName = ['customer name', 'nama pelanggan', 'nama outlet'];
+                    const kProdCode = ['product code', 'kode produk', 'material code', 'material no', 'sku', 'item code', 'kode barang'];
+                    const kProdName = ['product name', 'nama produk', 'material', 'deskripsi', 'item name', 'nama barang'];
+                    
+                    let productMap = {};
+                    let matchedCount25 = 0;
+                    let matchedCount26 = 0;
+                    
+                    // Proses sales 2025
+                    sales2025.forEach(r => {
+                        let code = String(getVal(r, kCustCode) || '').trim();
+                        let codeStr = String(code || '').trim().toUpperCase();
+                        let outletStr = String(outletCode || '').trim().toUpperCase();
+                        if (codeStr !== outletStr) return;
+                        
+                        matchedCount25++;
+                        let bln = parseInt(getVal(r, kBulan));
+                        if (!bln) return;
+                        
+                        let prodCode = String(getVal(r, kProdCode) || '-').trim();
+                        let prodName = String(getVal(r, kProdName) || '-').trim().toUpperCase();
+                        let sales = parseNum(getVal(r, kSales));
+                        let key = prodCode + '|' + prodName;
+                        
+                        if (!productMap[key]) {
+                            productMap[key] = {
+                                prodCode, prodName,
+                                lySales: 0, mtdSales: 0,
+                                fy2025Sales: 0, fy2026Sales: 0
+                            };
+                        }
+                        
+                        productMap[key].fy2025Sales += sales;
+                        if (viewMode === 'MTD') {
+                            if (bln === m) productMap[key].lySales += sales;
+                        } else {
+                            if (bln <= m) productMap[key].lySales += sales;
+                        }
+                    });
+                    
+                    // Proses sales 2026
+                    sales2026.forEach(r => {
+                        let code = String(getVal(r, kCustCode) || '').trim();
+                        let codeStr = String(code || '').trim().toUpperCase();
+                        let outletStr = String(outletCode || '').trim().toUpperCase();
+                        if (codeStr !== outletStr) return;
+                        
+                        matchedCount26++;
+                        let bln = parseInt(getVal(r, kBulan));
+                        if (!bln) return;
+                        
+                        let prodCode = String(getVal(r, kProdCode) || '-').trim();
+                        let prodName = String(getVal(r, kProdName) || '-').trim().toUpperCase();
+                        let sales = parseNum(getVal(r, kSales));
+                        let key = prodCode + '|' + prodName;
+                        
+                        if (!productMap[key]) {
+                            productMap[key] = {
+                                prodCode, prodName,
+                                lySales: 0, mtdSales: 0,
+                                fy2025Sales: 0, fy2026Sales: 0
+                            };
+                        }
+                        
+                        if (bln <= m) productMap[key].fy2026Sales += sales;
+                        if (bln === m) productMap[key].mtdSales += sales;
+                    });
+                    
+                    console.log('Baris 2025 yang cocok:', matchedCount25);
+                    console.log('Baris 2026 yang cocok:', matchedCount26);
+                    console.log('Jumlah produk unik:', Object.keys(productMap).length);
+                    
+                    // Konversi ke array
+                    let details = Object.keys(productMap).map(key => {
+                        let p = productMap[key];
+                        let currSales = viewMode === 'MTD' ? p.mtdSales : p.fy2026Sales;
+                        return {
+                            bizType: (dist && (dist.toUpperCase().includes('APL') || dist.toUpperCase().includes('ANUGERAH') || dist.toUpperCase().includes('KFT'))) ? 'PHG' : 'CHG',
+                            dist: dist || '-',
+                            outletCode,
+                            outletName,
+                            prodCode: p.prodCode,
+                            prodName: p.prodName,
+                            lySales: p.lySales,
+                            mtdSales: p.mtdSales,
+                            fy2025Sales: p.fy2025Sales,
+                            fy2026Sales: p.fy2026Sales,
+                            gap: currSales - p.lySales
+                        };
+                    });
+                    
+                    details.sort((a, b) => a.gap - b.gap);
+                    
+                    console.log('Details array length:', details.length);
+                    console.log('Details:', details.slice(0, 3));
+                    
+                    setProductModalData(details);
+                    setProductModalTitle(outletName + ' (' + dist + ') - Mode ' + viewMode);
+                    setShowProductModal(true);
+                } catch (err) {
+                    console.error('ERROR di handleProductClick:', err);
+                    setProductModalData([]);
+                    setProductModalTitle('ERROR: ' + err.message);
+                    setShowProductModal(true);
+                }
+            };
+            
+            const detectBizTypeFromDist = (dist) => {
+                if (!dist) return '-';
+                let d = dist.toUpperCase();
+                if (d.includes('APL') || d.includes('ANUGERAH') || d.includes('KFT')) return 'PHG';
+                return 'CHG';
+            };
+
             if (!apiData || !oaData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
@@ -2047,7 +2190,7 @@
                                         <thead className="sticky top-0 shadow"><tr><th>Cust Code</th><th className="text-left">Customer Name</th><th className="text-right">Lost Sales (Rp)</th></tr></thead>
                                         <tbody>
                                             {lossData.lossAPL.length === 0 ? <tr><td colSpan="3" className="text-center py-4">Semua pelanggan APL aman bertransaksi!</td></tr> : null}
-                                            {lossData.lossAPL.map((r, i) => <tr key={i}><td className="text-center text-[10px]">{r.code}</td><td className="text-left font-semibold text-[10px]">{r.name}</td><td className="text-right font-black text-red-600 text-[10px]">{formatCurr(r.lostSales)}</td></tr>)}
+                                            {lossData.lossAPL.map((r, i) => <tr key={i}><td className="text-center text-[10px]">{r.code}</td><td className="text-left font-semibold text-[10px]">{r.name}</td><td className="text-right font-black text-red-600 text-[10px] cursor-pointer underline hover:bg-red-100" style={{cursor: 'pointer', textDecoration: 'underline'}} onClick={() => handleProductClick(String(r.code), r.name, 'APL')}>{formatCurr(r.lostSales)}</td></tr>)}
                                         </tbody>
                                     </table>
                                 </div>
@@ -2059,7 +2202,7 @@
                                         <thead className="sticky top-0 shadow"><tr><th>Cust Code</th><th className="text-left">Customer Name</th><th className="text-right">Lost Sales (Rp)</th></tr></thead>
                                         <tbody>
                                             {lossData.lossKFT.length === 0 ? <tr><td colSpan="3" className="text-center py-4">Semua pelanggan KFT aman bertransaksi!</td></tr> : null}
-                                            {lossData.lossKFT.map((r, i) => <tr key={i}><td className="text-center text-[10px]">{r.code}</td><td className="text-left font-semibold text-[10px]">{r.name}</td><td className="text-right font-black text-red-600 text-[10px]">{formatCurr(r.lostSales)}</td></tr>)}
+                                            {lossData.lossKFT.map((r, i) => <tr key={i}><td className="text-center text-[10px]">{r.code}</td><td className="text-left font-semibold text-[10px]">{r.name}</td><td className="text-right font-black text-red-600 text-[10px] cursor-pointer underline hover:bg-red-100" style={{cursor: 'pointer', textDecoration: 'underline'}} onClick={() => handleProductClick(String(r.code), r.name, 'KFT / Others')}>{formatCurr(r.lostSales)}</td></tr>)}
                                         </tbody>
                                     </table>
                                 </div>
@@ -2106,6 +2249,76 @@
                                 </div>
                                 <div className="bg-gray-50 p-3 rounded-b-2xl border-t flex justify-end">
                                     <button onClick={() => setShowLossModal(false)} className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg text-sm">Tutup</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {showProductModal && (
+                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 no-print" onClick={() => setShowProductModal(false)}>
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                                <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-4 rounded-t-2xl flex justify-between items-center">
+                                    <div>
+                                        <h3 className="text-lg font-black">Detail Produk - Lost Sales</h3>
+                                        <p className="text-xs text-orange-100 mt-1">{productModalTitle} | Total: {productModalData.length} produk</p>
+                                    </div>
+                                    <button onClick={() => setShowProductModal(false)} className="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold">X</button>
+                                </div>
+                                <div className="p-4 overflow-y-auto flex-1">
+                                    <table className="excel-table w-full">
+                                        {productModalData.length === 0 && (
+                                            <tr><td colSpan="12" className="text-center py-8 text-gray-500 font-semibold bg-yellow-50">Tidak ada data produk yang ditemukan untuk outlet ini. Kemungkinan kode outlet tidak cocok atau data produk tidak lengkap.</td></tr>
+                                        )}
+                                        <thead className="sticky top-0 shadow z-10">
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Business Type</th>
+                                                <th>Distributor</th>
+                                                <th>Kode Outlet</th>
+                                                <th className="text-left">Nama Outlet</th>
+                                                <th>Kode Produk</th>
+                                                <th className="text-left">Nama Produk</th>
+                                                <th className="text-right">Omset Last Year</th>
+                                                {viewMode === 'MTD' ? (
+                                                    <th className="text-right">Omset MTD</th>
+                                                ) : (
+                                                    <>
+                                                        <th className="text-right">Omset MTD</th>
+                                                        <th className="text-right">Omset FY 2025</th>
+                                                        <th className="text-right">Omset FY 2026</th>
+                                                    </>
+                                                )}
+                                                <th className="text-right">Gap</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {productModalData.map((r, i) => (
+                                                <tr key={i} className="hover:bg-orange-50">
+                                                    <td className="text-center text-xs">{i + 1}</td>
+                                                    <td className="text-center text-xs font-bold">{r.bizType}</td>
+                                                    <td className="text-center text-xs">{r.dist}</td>
+                                                    <td className="text-center font-bold text-blue-900 text-xs">{r.outletCode}</td>
+                                                    <td className="text-left font-semibold text-xs">{r.outletName}</td>
+                                                    <td className="text-center text-xs">{r.prodCode}</td>
+                                                    <td className="text-left text-xs">{r.prodName}</td>
+                                                    <td className="text-right text-xs">{formatCurr(r.lySales)}</td>
+                                                    {viewMode === 'MTD' ? (
+                                                        <td className="text-right text-xs">{formatCurr(r.mtdSales)}</td>
+                                                    ) : (
+                                                        <>
+                                                            <td className="text-right text-xs">{formatCurr(r.mtdSales)}</td>
+                                                            <td className="text-right text-xs">{formatCurr(r.fy2025Sales)}</td>
+                                                            <td className="text-right text-xs">{formatCurr(r.fy2026Sales)}</td>
+                                                        </>
+                                                    )}
+                                                    <td className="text-right font-black text-red-600 text-xs">{formatCurr(r.gap)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="bg-gray-50 p-3 rounded-b-2xl border-t flex justify-between items-center">
+                                    <p className="text-xs text-gray-600"><b>Keterangan:</b> Omset Last Year = {viewMode === 'MTD' ? 'Omset bulan yang sama tahun lalu' : 'Omset YTD tahun lalu (Jan s.d bulan berjalan)'}. Gap = Omset periode berjalan - Omset Last Year.</p>
+                                    <button onClick={() => setShowProductModal(false)} className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg text-sm">Tutup</button>
                                 </div>
                             </div>
                         </div>
