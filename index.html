@@ -1815,7 +1815,7 @@
                             <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={()=>handleSort('s25')}>TAHUN 2025<SortIcon col="s25" /></th>
                             <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={()=>handleSort('s26')}>TAHUN 2026<SortIcon col="s26" /></th>
                             <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={()=>handleSort('target')}>TARGET 2026<SortIcon col="target" /></th>
-                            <th className="text-center cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={()=>handleSort('ach')}>KONTRIBUSI<SortIcon col="ach" /></th>
+                            <th className="text-center cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={()=>handleSort('ach')}>ACH<SortIcon col="ach" /></th>
                             <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={()=>handleSort('gap')}>GAP<SortIcon col="gap" /></th>
                             <th className="text-center cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={()=>handleSort('growth')}>GROWTH<SortIcon col="growth" /></th>
                         </tr></thead>
@@ -1923,7 +1923,7 @@
                     </div>
                     <div className="overflow-auto">
                     <table className="excel-table w-full min-w-[900px]">
-                        <thead className="sticky top-0 shadow z-10"><tr><th className="text-left">DIVISION</th><th className="text-right">TAHUN 2025</th><th className="text-right">TAHUN 2026</th><th className="text-right">TARGET 2026</th><th className="text-center">KONTRIBUSI VS TARGET</th><th className="text-right">GAP</th><th className="text-center">GROWTH</th></tr></thead>
+                        <thead className="sticky top-0 shadow z-10"><tr><th className="text-left">DIVISION</th><th className="text-right">TAHUN 2025</th><th className="text-right">TAHUN 2026</th><th className="text-right">TARGET 2026</th><th className="text-center">ACH VS TARGET</th><th className="text-right">GAP</th><th className="text-center">GROWTH</th></tr></thead>
                         <tbody>
                             <tr className="bg-yellow-300 font-black"><td className="text-left text-xs">TOTAL ({filtered.length} division)</td><td className="text-right text-xs">{formatCurr(tot.s25)}</td><td className="text-right text-xs">{formatCurr(tot.s26)}</td><td className="text-right text-xs">{formatCurr(tot.target)}</td><td className={`text-center text-xs ${cGrw(tot.ach-100)}`}>{tot.ach.toFixed(2)}%</td><td className={`text-right text-xs ${tot.gap<0?'text-red-600':'text-green-600'}`}>{formatCurr(tot.gap)}</td><td className={`text-center text-xs ${cGrw(tot.growth)}`}>{fGrw(tot.growth)}</td></tr>
                             {filtered.map((r, i) => (
@@ -1943,7 +1943,7 @@
                                 </div>
                                 <div className="overflow-auto p-3 flex-1">
                                 <table className="excel-table w-full min-w-[900px]">
-                                    <thead className="sticky top-0 shadow z-10"><tr><th>No</th><th className="text-left">BRAND</th><th className="text-right">TAHUN 2025</th><th className="text-right">TAHUN 2026</th><th className="text-right">TARGET 2026</th><th className="text-center">KONTRIBUSI VS TARGET</th><th className="text-right">GAP</th><th className="text-center">GROWTH</th></tr></thead>
+                                    <thead className="sticky top-0 shadow z-10"><tr><th>No</th><th className="text-left">BRAND</th><th className="text-right">TAHUN 2025</th><th className="text-right">TAHUN 2026</th><th className="text-right">TARGET 2026</th><th className="text-center">ACH VS TARGET</th><th className="text-right">GAP</th><th className="text-center">GROWTH</th></tr></thead>
                                     <tbody>
                                         <tr className="bg-yellow-200 font-black"><td colSpan={2} className="text-center text-xs">TOTAL</td><td className="text-right text-xs">{formatCurr(bTot.s25)}</td><td className="text-right text-xs">{formatCurr(bTot.s26)}</td><td className="text-right text-xs">{formatCurr(bTot.target)}</td><td className={`text-center text-xs ${cGrw(bTot.ach-100)}`}>{bTot.ach.toFixed(2)}%</td><td className={`text-right text-xs ${bTot.gap<0?'text-red-700':'text-green-700'}`}>{formatCurr(bTot.gap)}</td><td className={`text-center text-xs ${cGrw(bTot.growth)}`}>{fGrw(bTot.growth)}</td></tr>
                                         {brandDataFiltered.map((r, i) => (
