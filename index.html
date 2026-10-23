@@ -680,12 +680,19 @@
             const [selectedDivPHT, setSelectedDivPHT] = useState('ALL');
             const [selectedSubPHT, setSelectedSubPHT] = useState('ALL');
             const [selectedClusterPHT, setSelectedClusterPHT] = useState('ALL');
+            const [selectedProductPHT, setSelectedProductPHT] = useState(''); // '' = view produk, terisi = drill-down outlet
+            const [isProdDropdownOpen, setIsProdDropdownOpen] = useState(false);
             const dropdownRef = useRef(null);
+            const prodDropdownRef = useRef(null);
 
             useEffect(() => { setSelectedMonthPHT(month); }, [month]);
             useEffect(() => {
                 const handleClickOutside = (e) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsDropdownOpen(false); };
                 document.addEventListener('mousedown', handleClickOutside); return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, []);
+            useEffect(() => {
+                const handleClickOutsideProd = (e) => { if (prodDropdownRef.current && !prodDropdownRef.current.contains(e.target)) setIsProdDropdownOpen(false); };
+                document.addEventListener('mousedown', handleClickOutsideProd); return () => document.removeEventListener('mousedown', handleClickOutsideProd);
             }, []);
 
             const m = parseInt(selectedMonthPHT) || 1;
@@ -801,6 +808,10 @@
                 }).sort((a, b) => b.hitMtd - a.hitMtd);
             }, [apiData, m, selectedOutletPHT]);
 
+            const allProductsPHT = useMemo(() => {
+                return phtRows.map(r => ({ key: r.code + '|||' + r.name, label: (r.code && r.code !== '-' ? r.code + ' - ' : '') + r.name })).sort((a,b) => a.label.localeCompare(b.label));
+            }, [phtRows]);
+
             const filteredPHT = useMemo(() => {
                 return phtRows.filter(r => {
                     let matchDist = true;
@@ -818,6 +829,77 @@
                     return phtSortDir === 'asc' ? (va||0) - (vb||0) : (vb||0) - (va||0);
                 });
             }, [phtRows, selectedDist, searchProdPHT, selectedBizPHT, selectedDivPHT, selectedSubPHT, selectedClusterPHT, phtSortCol, phtSortDir]);
+
+            // DRILL-DOWN: ketika produk dipilih, hitung data per-outlet untuk produk tersebut
+            const outletRowsForProduct = useMemo(() => {
+                if (!apiData || !selectedProductPHT) return [];
+                const parts = selectedProductPHT.split('|||');
+                const selCode = parts[0] || ''; const selName = parts[1] || '';
+                const kCode = ['item code', 'kode barang', 'material code'];
+                const kName = ['product name', 'nama produk', 'material'];
+                const kBulan = ['bulan', 'month', 'bln'];
+                const kSales = ['sum of sales', 'sales', 'value', 'amount'];
+                const kTarget = ['target', 'quota', 'sum of quota'];
+                const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'outlet', 'customer_name'];
+                const kCustCode = ['customer code', 'kode pelanggan', 'cust code', 'outlet code'];
+                const kCl = ['cluster', 'channel'];
+                const kDist = ['distributor', 'dist', 'principal'];
+                const matchProd = (r) => {
+                    let c = String(getVal(r, kCode) || '').trim().toUpperCase();
+                    let n = String(getVal(r, kName) || '').trim().toUpperCase();
+                    if (selCode && selCode !== '-' && c && c === selCode) return true;
+                    return n === selName;
+                };
+                let outMap = {};
+                const ensure = (r) => {
+                    let cn = String(getVal(r, kCustName) || 'UNKNOWN OUTLET').trim().toUpperCase();
+                    let cc = String(getVal(r, kCustCode) || '-').trim().toUpperCase();
+                    let cl = String(getVal(r, kCl) || '-').trim().toUpperCase();
+                    let dist = String(getVal(r, kDist) || 'APL').trim().toUpperCase();
+                    let key = cc + '|||' + cn;
+                    if (!outMap[key]) outMap[key] = { code: cc, name: cn, cluster: cl, dist: dist, targetMtd:0, targetYtd:0, hitMtd:0, hitYtd:0, hitMtd25:0, hitYtd25:0 };
+                    return outMap[key];
+                };
+                (apiData.target2026 || []).forEach(r => {
+                    if (!matchProd(r)) return;
+                    let o = ensure(r); let tVal = parseNum(getVal(r, kTarget)); let blnRaw = getVal(r, kBulan);
+                    if (blnRaw && !isNaN(parseInt(blnRaw))) {
+                        let bln = parseInt(blnRaw); if (bln <= m) o.targetYtd += tVal; if (bln === m) o.targetMtd += tVal;
+                    } else {
+                        let found = false;
+                        ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach((mon, idx) => {
+                            let v = parseNum(getVal(r, [`quota ${mon}`, `target ${mon}`, `sum of quota ${mon}`]));
+                            if (v > 0) { found = true; if (idx + 1 <= m) { o.targetYtd += v; if (idx + 1 === m) o.targetMtd += v; } }
+                        });
+                        if (!found) { o.targetYtd += (tVal * m / 12); o.targetMtd += (tVal / 12); }
+                    }
+                });
+                (apiData.sales2026 || []).forEach(r => {
+                    if (!matchProd(r)) return;
+                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                    let o = ensure(r); let sVal = parseNum(getVal(r, kSales));
+                    if (bln <= m) o.hitYtd += sVal; if (bln === m) o.hitMtd += sVal;
+                });
+                (apiData.sales2025 || []).forEach(r => {
+                    if (!matchProd(r)) return;
+                    let bln = parseInt(getVal(r, kBulan)); if(!bln) return;
+                    let o = ensure(r); let sVal = parseNum(getVal(r, kSales));
+                    if (bln <= m) o.hitYtd25 += sVal; if (bln === m) o.hitMtd25 += sVal;
+                });
+                return Object.values(outMap).map(d => {
+                    let growthMtd = calcGrowth(d.hitMtd, d.hitMtd25); let growthYtd = calcGrowth(d.hitYtd, d.hitYtd25);
+                    let gapMtd = d.hitMtd - d.targetMtd; let gapYtd = d.hitYtd - d.targetYtd;
+                    return { ...d, growthMtd, growthYtd, gapMtd, gapYtd };
+                }).sort((a, b) => b.hitYtd - a.hitYtd);
+            }, [apiData, m, selectedProductPHT]);
+
+            const outletSummary = useMemo(() => {
+                return outletRowsForProduct.reduce((acc, curr) => {
+                    acc.targetMtd += curr.targetMtd; acc.targetYtd += curr.targetYtd; acc.hitMtd += curr.hitMtd; acc.hitYtd += curr.hitYtd;
+                    acc.hitMtd25 += curr.hitMtd25; acc.hitYtd25 += curr.hitYtd25; acc.gapMtd += curr.gapMtd; acc.gapYtd += curr.gapYtd;
+                    return acc;
+                }, { targetMtd: 0, targetYtd: 0, hitMtd: 0, hitYtd: 0, hitMtd25: 0, hitYtd25: 0, gapMtd: 0, gapYtd: 0 });
+            }, [outletRowsForProduct]);
 
             const phtSummary = useMemo(() => {
                 return filteredPHT.reduce((acc, curr) => {
@@ -858,9 +940,19 @@
                                     )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1 sm:gap-2">
-                                <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase">Cari Produk:</span>
-                                <input type="text" value={searchProdPHT} onChange={(e) => setSearchProdPHT(e.target.value)} placeholder="Ketik kode / nama produk..." className="border-2 border-green-500 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold bg-white w-32 sm:w-48" />
+                            <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto" ref={prodDropdownRef}>
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase shrink-0">Cari Produk:</span>
+                                <div className="relative w-full md:w-[280px]">
+                                    <input type="text" value={searchProdPHT} onChange={(e) => { setSearchProdPHT(e.target.value); setIsProdDropdownOpen(true); if(selectedProductPHT) setSelectedProductPHT(''); }} onFocus={() => setIsProdDropdownOpen(true)} placeholder="Ketik / klik produk untuk lihat outlet..." className="w-full border-2 border-green-500 rounded p-1 sm:p-1.5 text-[10px] sm:text-xs font-bold bg-white uppercase" />
+                                    {isProdDropdownOpen && (
+                                        <ul className="absolute z-50 w-full mt-1 bg-white border-2 border-green-500 rounded-md shadow-2xl max-h-60 overflow-y-auto text-left">
+                                            <li onClick={() => { setSearchProdPHT(''); setSelectedProductPHT(''); setIsProdDropdownOpen(false); }} className="px-3 py-2 text-[10px] sm:text-xs font-bold text-gray-800 hover:bg-green-100 cursor-pointer border-b border-gray-100">ALL PRODUK (TAMPIL SEMUA)</li>
+                                            {allProductsPHT.filter(p => p.label.toLowerCase().includes((searchProdPHT || '').toLowerCase())).slice(0, 50).map((p, i) => (
+                                                <li key={i} onClick={() => { setSelectedProductPHT(p.key); setSearchProdPHT(p.label); setIsProdDropdownOpen(false); }} className="px-3 py-2 text-[10px] sm:text-xs font-bold text-gray-800 hover:bg-green-100 cursor-pointer border-b border-gray-100" title="Klik untuk lihat rincian outlet produk ini">{p.label}</li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center gap-1 sm:gap-2">
                                 <span className="text-[10px] sm:text-xs font-bold text-gray-700 uppercase">Bulan:</span>
@@ -894,6 +986,54 @@
                                 </select>
                             </div>
                         </div>
+                        {selectedProductPHT ? (
+                            <div className="animate-fade-in">
+                                <div className="mb-3 flex flex-wrap items-center gap-3 bg-blue-50 p-2 sm:p-3 rounded-lg border-2 border-blue-400">
+                                    <button onClick={() => { setSelectedProductPHT(''); setSearchProdPHT(''); }} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-[10px] sm:text-xs font-bold shadow">← KEMBALI KE PRODUK</button>
+                                    <span className="text-[10px] sm:text-xs font-black text-blue-900 uppercase">Rincian Outlet: {selectedProductPHT.split('|||')[1] || selectedProductPHT}</span>
+                                    <span className="text-[10px] text-gray-500 font-semibold ml-auto">{outletRowsForProduct.length} outlet tercatat</span>
+                                </div>
+                                <div className="overflow-x-auto max-h-[600px] w-full">
+                                    <table className="excel-table w-full min-w-[1000px]">
+                                        <thead className="sticky top-0 shadow z-20">
+                                            <tr>
+                                                <th className="bg-green-300">Kode Outlet</th><th className="text-left bg-green-300">Nama Outlet</th><th className="text-center bg-green-300">Cluster</th>
+                                                <th className="text-right bg-green-300">Target MTD</th><th className="text-right bg-green-300">Target YTD</th>
+                                                <th className="text-right bg-green-300">HIT MTD</th><th className="text-right bg-green-300">LY MTD 2025</th><th className="text-right bg-green-300">HIT YTD</th><th className="text-right bg-green-300">LY YTD 2025</th>
+                                                <th className="text-center bg-green-300">Growth MTD</th><th className="text-center bg-green-300">Growth YTD</th>
+                                                <th className="text-right bg-green-300">GAP MTD</th><th className="text-right bg-green-300">GAP YTD</th>
+                                            </tr>
+                                            <tr className="bg-green-50 border-b-2 border-black">
+                                                <th colSpan="3" className="text-right text-gray-500 font-normal italic pr-2">Total Outlet ➔</th>
+                                                <th className="text-right font-black text-gray-800">{formatCurr(outletSummary.targetMtd)}</th><th className="text-right font-black text-gray-800">{formatCurr(outletSummary.targetYtd)}</th>
+                                                <th className="text-right font-black text-blue-700">{formatCurr(outletSummary.hitMtd)}</th><th className="text-right font-black text-gray-600">{formatCurr(outletSummary.hitMtd25)}</th>
+                                                <th className="text-right font-black text-orange-600">{formatCurr(outletSummary.hitYtd)}</th><th className="text-right font-black text-gray-600">{formatCurr(outletSummary.hitYtd25)}</th>
+                                                <th className={`text-center font-black ${cGrw(calcGrowth(outletSummary.hitMtd, outletSummary.hitMtd25))}`}>{fGrw(calcGrowth(outletSummary.hitMtd, outletSummary.hitMtd25))}</th>
+                                                <th className={`text-center font-black ${cGrw(calcGrowth(outletSummary.hitYtd, outletSummary.hitYtd25))}`}>{fGrw(calcGrowth(outletSummary.hitYtd, outletSummary.hitYtd25))}</th>
+                                                <th className={`text-right font-black ${outletSummary.gapMtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(outletSummary.gapMtd)}</th>
+                                                <th className={`text-right font-black ${outletSummary.gapYtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(outletSummary.gapYtd)}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {outletRowsForProduct.length === 0 ? (
+                                                <tr><td colSpan="13" className="text-center py-6 text-gray-400 font-bold">Tidak ada data outlet untuk produk ini.</td></tr>
+                                            ) : (
+                                                outletRowsForProduct.map((r, i) => (
+                                                    <tr key={i} className="hover:bg-green-50">
+                                                        <td className="text-center font-bold text-green-900">{r.code}</td><td className="text-left font-semibold whitespace-nowrap">{r.name}</td><td className="text-center text-gray-600 text-[10px]">{r.cluster}</td>
+                                                        <td className="text-right">{formatCurr(r.targetMtd)}</td><td className="text-right">{formatCurr(r.targetYtd)}</td>
+                                                        <td className="text-right font-black text-blue-700 bg-blue-50/50">{formatCurr(r.hitMtd)}</td><td className="text-right text-gray-500">{formatCurr(r.hitMtd25)}</td>
+                                                        <td className="text-right font-black text-orange-600 bg-orange-50/50">{formatCurr(r.hitYtd)}</td><td className="text-right text-gray-500">{formatCurr(r.hitYtd25)}</td>
+                                                        <td className={`text-center font-bold ${cGrw(r.growthMtd)}`}>{fGrw(r.growthMtd)}</td><td className={`text-center font-bold ${cGrw(r.growthYtd)}`}>{fGrw(r.growthYtd)}</td>
+                                                        <td className={`text-right font-black ${r.gapMtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(r.gapMtd)}</td><td className={`text-right font-black ${r.gapYtd < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurr(r.gapYtd)}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ) : (
                         <div className="overflow-x-auto max-h-[600px] w-full">
                             <table className="excel-table w-full min-w-[1000px]">
                                 <thead className="sticky top-0 shadow z-20">
@@ -930,6 +1070,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        )}
                     </div>
                 </div>
             );
@@ -3192,6 +3333,7 @@
                 
                 const sales2026 = apiData.sales2026 || [];
                 const target2026 = apiData.target2026 || [];
+                const sales2025 = apiData.sales2025 || [];
                 const stock = apiData.stock || [];
 
                 const kCode = ['item code', 'kode barang', 'material code'];
@@ -3231,7 +3373,7 @@
                     }
                     
                     let key = dist + '_' + name;
-                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
+                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, qty2025:0, salesRp2025:0, lastHna:0, stockUnit:0 };
                     itemData[key].targetMtd += targetMtd; itemData[key].targetYtd += targetYtd; itemData[key].targetFy += targetFy;
                 });
 
@@ -3247,11 +3389,26 @@
                     let salesVal = parseNum(getVal(r, kSales)); let salesQty = parseNum(getVal(r, kQty)); let hnaVal = parseNum(getVal(r, kHna));
 
                     let key = findBestKey(itemData, dist, name, code);
-                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
+                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, qty2025:0, salesRp2025:0, lastHna:0, stockUnit:0 };
                     
                     itemData[key].ytdSalesRp += salesVal; itemData[key].ytdQty += salesQty;
                     if (bln === m) { itemData[key].mtdSalesRp += salesVal; itemData[key].mtdQty += salesQty; }
                     if(hnaVal > 0) itemData[key].lastHna = hnaVal;
+                });
+
+                // AVG 2025 (tahun lalu) = total unit penjualan full year (Jan-Des 2025) / 12 bulan
+                // Objektif: data 12 bulan lengkap, rata-rata bulanan sesungguhnya (termasuk bulan tanpa penjualan)
+                sales2025.forEach(r => {
+                    let bln = parseInt(getVal(r, ['bulan', 'month', 'bln'])); if(!bln) return; // semua bulan 2025 dihitung (full year)
+                    let code = String(getVal(r, kCode) || '').trim(); 
+                    let name = String(getVal(r, kName) || code || '').trim().toUpperCase(); 
+                    if (!name) return;
+                    let distRaw = String(getVal(r, kDist) || 'APL').toUpperCase();
+                    let dist = (distRaw.includes('APL') || distRaw.includes('ANUGERAH')) ? 'APL' : 'KFT';
+                    let salesVal = parseNum(getVal(r, kSales)); let salesQty = parseNum(getVal(r, kQty));
+                    let key = findBestKey(itemData, dist, name, code);
+                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, qty2025:0, salesRp2025:0, lastHna:0, stockUnit:0 };
+                    itemData[key].qty2025 += salesQty; itemData[key].salesRp2025 += salesVal;
                 });
 
                 stock.forEach(r => {
@@ -3265,7 +3422,7 @@
                     let stockUnit = parseNum(getVal(r, kStockValue)); let hnaVal = parseNum(getVal(r, kHna));
 
                     let key = findBestKey(itemData, dist, name, code);
-                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, lastHna:0, stockUnit:0 };
+                    if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, qty2025:0, salesRp2025:0, lastHna:0, stockUnit:0 };
 
                     itemData[key].stockUnit += stockUnit; if(hnaVal > 0) itemData[key].lastHna = hnaVal;
                 });
@@ -3277,6 +3434,7 @@
                     let estimatedPrice = d.lastHna > 0 ? d.lastHna : ((salesQtyToUse > 0 && salesRpToUse > 0) ? (salesRpToUse / salesQtyToUse) : 10000);
                     
                     let avgMonthlySalesUnit = isMTD ? salesQtyToUse : (d.ytdQty > 0 ? (d.ytdQty / m) : ((d.ytdSalesRp / estimatedPrice) / m));
+                    let avg2025MonthlyUnit = d.qty2025 > 0 ? (d.qty2025 / 12) : ((d.salesRp2025 / estimatedPrice) / 12); // pakai unit aktual jika ada; jika hanya omzet, estimasi unit = omzet ÷ harga dasar
                     let avgDailySalesUnit = avgMonthlySalesUnit / 30;
                     
                     let scd = avgDailySalesUnit > 0 ? Math.round(d.stockUnit / avgDailySalesUnit) : (d.stockUnit > 0 ? 999 : 0);
@@ -3294,7 +3452,7 @@
                     let orderForEOY = remainingTargetUnit > d.stockUnit ? Math.round(remainingTargetUnit - d.stockUnit) : 0;
                     let estEOYValue = orderForEOY * estimatedPrice;
 
-                    return { ...d, estimatedPrice, avgMonthlySalesUnit, scd, requiredStockUnit, status, color, stockValue, requiredStockValue, orderForEOY, estEOYValue };
+                    return { ...d, estimatedPrice, avg2025MonthlyUnit, avgMonthlySalesUnit, scd, requiredStockUnit, status, color, stockValue, requiredStockValue, orderForEOY, estEOYValue };
                 }).filter(d => d.stockUnit > 0 || d.ytdQty > 0 || d.targetFy > 0 || d.ytdSalesRp > 0);
             }, [apiData, m, viewMode]);
 
@@ -3314,7 +3472,7 @@
                 return <span className="ml-1 text-orange-600 font-black">{sortDir === 'asc' ? '▲' : '▼'}</span>;
             };
             
-            const numericCols = ['targetMtd', 'targetYtd', 'ytdSalesRp', 'targetFy', 'avgMonthlySalesUnit', 'stockUnit', 'stockValue', 'scd', 'requiredStockUnit', 'requiredStockValue', 'orderForEOY'];
+            const numericCols = ['targetMtd', 'targetYtd', 'ytdSalesRp', 'targetFy', 'avg2025MonthlyUnit', 'avgMonthlySalesUnit', 'stockUnit', 'stockValue', 'scd', 'requiredStockUnit', 'requiredStockValue', 'orderForEOY'];
             
             const filteredData = [...tableData].filter(r => 
                 (statusFilter === 'ALL' || r.status.toUpperCase() === statusFilter) &&
@@ -3327,10 +3485,10 @@
                 return sortDir === 'asc' ? valA - valB : valB - valA;
             });
 
-            const fSum = { targetMtd: 0, targetYtd: 0, ytdSalesRp: 0, targetFy: 0, avgMonthlySalesUnit: 0, stockUnit: 0, stockVal: 0, reqUnit: 0, reqVal: 0, eoyUnit: 0, eoyVal: 0 };
+            const fSum = { targetMtd: 0, targetYtd: 0, ytdSalesRp: 0, targetFy: 0, avg2025: 0, avgMonthlySalesUnit: 0, stockUnit: 0, stockVal: 0, reqUnit: 0, reqVal: 0, eoyUnit: 0, eoyVal: 0 };
             filteredData.forEach(d => {
                 fSum.targetMtd += (d.targetMtd || 0); fSum.targetYtd += (d.targetYtd || 0); fSum.ytdSalesRp += (d.ytdSalesRp || 0); fSum.targetFy += (d.targetFy || 0);
-                fSum.avgMonthlySalesUnit += (d.avgMonthlySalesUnit || 0); fSum.stockUnit += (d.stockUnit || 0);
+                fSum.avg2025 += (d.avg2025MonthlyUnit || 0); fSum.avgMonthlySalesUnit += (d.avgMonthlySalesUnit || 0); fSum.stockUnit += (d.stockUnit || 0);
                 fSum.stockVal += (d.stockValue || 0); fSum.reqUnit += (d.requiredStockUnit || 0); fSum.reqVal += (d.requiredStockValue || 0);
                 fSum.eoyUnit += (d.orderForEOY || 0); fSum.eoyVal += (d.estEOYValue || 0);
             });
@@ -3368,7 +3526,8 @@
                                         <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('targetYtd')}>Target YTD (Rp)<SortIcon col="targetYtd" /></th>
                                         <th className="text-right text-blue-800 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('ytdSalesRp')}>Omset YTD (Rp)<SortIcon col="ytdSalesRp" /></th>
                                         <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('targetFy')}>Target FY (Rp)<SortIcon col="targetFy" /></th>
-                                        <th className="text-right cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('avgMonthlySalesUnit')}>Avg Sales /Bln (Unit)<SortIcon col="avgMonthlySalesUnit" /></th>
+                                        <th className="text-right bg-2025 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('avg2025MonthlyUnit')}>Avg Sales 2025 /Bln (Unit)<SortIcon col="avg2025MonthlyUnit" /></th>
+                                        <th className="text-right bg-2026 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('avgMonthlySalesUnit')}>Avg Sales 2026 (Unit)<SortIcon col="avgMonthlySalesUnit" /></th>
                                         <th className="text-right bg-blue-50 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('stockUnit')}>Stok Saat Ini (Unit)<SortIcon col="stockUnit" /></th>
                                         <th className="text-right bg-blue-50 cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('stockValue')}>Value Stok (Rp)<SortIcon col="stockValue" /></th>
                                         <th className="text-center cursor-pointer hover:bg-yellow-200 select-none no-print" onClick={() => handleSort('scd')}>SCD<SortIcon col="scd" /></th>
@@ -3382,16 +3541,18 @@
                                     <tr className="total-row !bg-yellow-300 sticky top-[30px] z-10 shadow-sm border-b-2 border-black">
                                         <td colSpan="2" className="text-left font-black uppercase text-sm">TOTAL GABUNGAN</td>
                                         <td className="text-right font-black">{formatCurr(fSum.targetMtd)}</td><td className="text-right font-black">{formatCurr(fSum.targetYtd)}</td><td className="text-right font-black text-blue-800">{formatCurr(fSum.ytdSalesRp)}</td><td className="text-right font-black">{formatCurr(fSum.targetFy)}</td>
-                                        <td className="text-right font-black text-gray-700">{formatCurr(fSum.avgMonthlySalesUnit)}</td><td className="text-right font-black text-blue-900">{formatCurr(fSum.stockUnit)}</td><td className="text-right font-black text-blue-900">{formatCurr(fSum.stockVal)}</td>
+                                        <td className="text-right font-black text-amber-900 bg-2025">{formatCurr(fSum.avg2025)}</td>
+                                        <td className="text-right font-black text-orange-900 bg-2026">{formatCurr(fSum.avgMonthlySalesUnit)}</td><td className="text-right font-black text-blue-900">{formatCurr(fSum.stockUnit)}</td><td className="text-right font-black text-blue-900">{formatCurr(fSum.stockVal)}</td>
                                         <td colSpan="2" className="text-center font-black">-</td>
                                         <td className="text-right font-black text-red-700">{formatCurr(fSum.reqUnit)}</td><td className="text-right font-black text-red-700">{formatCurr(fSum.reqVal)}</td><td className="text-right font-black text-green-800">{formatCurr(fSum.eoyUnit)}</td>
                                     </tr>
-                                    {filteredData.length === 0 ? <tr><td colSpan="14" className="text-center py-4 text-gray-400">Tidak ada data untuk filter ini.</td></tr> : null}
+                                    {filteredData.length === 0 ? <tr><td colSpan="15" className="text-center py-4 text-gray-400">Tidak ada data untuk filter ini.</td></tr> : null}
                                     {filteredData.map((r, i) => (
                                         <tr key={i} className="hover:bg-gray-50">
                                             <td className="text-center font-bold text-blue-900">{r.dist}</td><td className="font-semibold">{r.name}</td>
                                             <td className="text-right font-bold text-gray-700">{formatCurr(r.targetMtd)}</td><td className="text-right font-bold text-gray-700">{formatCurr(r.targetYtd)}</td><td className="text-right font-bold text-blue-700">{formatCurr(r.ytdSalesRp)}</td><td className="text-right text-gray-600">{formatCurr(r.targetFy)}</td>
-                                            <td className="text-right font-semibold">{formatCurr(r.avgMonthlySalesUnit)}</td><td className="text-right font-black bg-blue-50">{formatCurr(r.stockUnit)}</td><td className="text-right font-black bg-blue-50 text-blue-700">{formatCurr(r.stockValue)}</td>
+                                            <td className="text-right font-semibold bg-2025">{formatCurr(r.avg2025MonthlyUnit)}</td>
+                                            <td className="text-right font-semibold bg-2026">{formatCurr(r.avgMonthlySalesUnit)}</td><td className="text-right font-black bg-blue-50">{formatCurr(r.stockUnit)}</td><td className="text-right font-black bg-blue-50 text-blue-700">{formatCurr(r.stockValue)}</td>
                                             <td className={`text-center font-bold ${r.color}`}>{r.scd >= 999 ? '>999' : r.scd} Hari</td><td className={`text-center font-bold ${r.color}`}>{r.status}</td>
                                             <td className="text-right font-black bg-orange-50 text-red-700">{formatCurr(r.requiredStockUnit)}</td><td className="text-right font-black bg-orange-50 text-red-700">{formatCurr(r.requiredStockValue)}</td><td className="text-right font-black bg-green-50 text-green-700">{formatCurr(r.orderForEOY)}</td>
                                         </tr>
