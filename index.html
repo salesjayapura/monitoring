@@ -3594,6 +3594,8 @@
                     let key = findBestKey(itemData, dist, name, code);
                     if(!itemData[key]) itemData[key] = { dist, code, name, targetMtd:0, targetYtd:0, targetFy:0, ytdSalesRp:0, ytdQty:0, mtdSalesRp:0, mtdQty:0, qty2025:0, salesRp2025:0, lastHna:0, stockUnit:0 };
                     itemData[key].qty2025 += salesQty; itemData[key].salesRp2025 += salesVal;
+                    if(bln <= m) { itemData[key].ytdQty2025 = (itemData[key].ytdQty2025||0) + salesQty; itemData[key].ytdSalesRp2025 = (itemData[key].ytdSalesRp2025||0) + salesVal; }
+                    if(bln === m) { itemData[key].mtdQty2025 = (itemData[key].mtdQty2025||0) + salesQty; itemData[key].mtdSalesRp2025 = (itemData[key].mtdSalesRp2025||0) + salesVal; }
                 });
 
                 stock.forEach(r => {
@@ -3618,8 +3620,12 @@
                     let salesRpToUse = isMTD ? d.mtdSalesRp : d.ytdSalesRp;
                     let estimatedPrice = d.lastHna > 0 ? d.lastHna : ((salesQtyToUse > 0 && salesRpToUse > 0) ? (salesRpToUse / salesQtyToUse) : 10000);
                     
-                    let avgMonthlySalesUnit = isMTD ? salesQtyToUse : (d.ytdQty > 0 ? (d.ytdQty / m) : ((d.ytdSalesRp / estimatedPrice) / m));
-                    let avg2025MonthlyUnit = d.qty2025 > 0 ? (d.qty2025 / 12) : ((d.salesRp2025 / estimatedPrice) / 12); // pakai unit aktual jika ada; jika hanya omzet, estimasi unit = omzet ÷ harga dasar
+                    let avgMonthlySalesUnit = isMTD ? (salesQtyToUse > 0 ? salesQtyToUse : (salesRpToUse > 0 ? (salesRpToUse / estimatedPrice) : 0)) : (d.ytdQty > 0 ? (d.ytdQty / m) : ((d.ytdSalesRp / estimatedPrice) / m));
+                    // AVG 2025 = periode yang sama dengan 2026: YTD (Jan s/d bulan m) / m, atau bulan sama jika mode MTD — apple-to-apple
+                    let qty25ToUse = isMTD ? (d.mtdQty2025||0) : (d.ytdQty2025||0);
+                    let rp25ToUse = isMTD ? (d.mtdSalesRp2025||0) : (d.ytdSalesRp2025||0);
+                    let div25 = isMTD ? 1 : m;
+                    let avg2025MonthlyUnit = qty25ToUse > 0 ? (qty25ToUse / div25) : ((rp25ToUse / estimatedPrice) / div25);
                     let avgDailySalesUnit = avgMonthlySalesUnit / 30;
                     
                     let scd = avgDailySalesUnit > 0 ? Math.round(d.stockUnit / avgDailySalesUnit) : (d.stockUnit > 0 ? 999 : 0);
