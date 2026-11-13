@@ -16,27 +16,31 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; display: flex; flex-direction: column; min-height: 100vh; }
+        body { font-family: 'Calibri', 'Carlito', sans-serif; font-variant-numeric: tabular-nums; background-color: #f1f5f9; color: #0f172a; display: flex; flex-direction: column; min-height: 100vh; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px;}
-        .excel-table { width: 100%; border-collapse: collapse; background-color: #fff; font-size: 11px; }
-        .excel-table th { border: 1px solid #000; background-color: #fde047; padding: 4px 4px; font-weight: bold; text-align: center; }
-        .excel-table td { border: 1px solid #000; padding: 2px 4px; }
+        .excel-table { width: 100%; border-collapse: collapse; background-color: #fff; font-size: 10px; line-height: 1.2; }
+        .excel-table th { border: 1px solid #1e293b; background-color: #fde047; padding: 4px 6px; font-weight: bold; text-align: center; color: #0f172a; font-size: 10px; line-height: 1.25; white-space: normal; overflow-wrap: break-word; vertical-align: middle; min-width: 56px; }
+        .excel-table td { border: 1px solid #cbd5e1; padding: 2px 5px; line-height: 1.2; white-space: nowrap; }
+        .excel-table td:not(.text-left):not(.text-center) { text-align: right; }
         .excel-table .total-row { background-color: #fef08a; font-weight: bold; }
-        .header-title { font-weight: 900; text-transform: uppercase; text-align: center; background: linear-gradient(135deg, #fde047 0%, #facc15 100%); padding: 6px 20px; display: inline-block; font-size: 14px; margin-bottom: 8px; border: 2px solid #1e293b; border-radius: 4px; box-shadow: 3px 3px 0px rgba(0,0,0,0.15); letter-spacing: 0.3px;}
+        main table:not(.excel-table) { font-size: 10px; border-collapse: collapse; line-height: 1.2; }
+        main table:not(.excel-table) th, main table:not(.excel-table) td { padding: 2px 5px !important; line-height: 1.2; }
+        .header-title { font-weight: 900; text-transform: uppercase; text-align: center; background: linear-gradient(135deg, #fde047 0%, #facc15 100%); padding: 8px 20px; display: inline-block; font-size: 14px; margin-bottom: 12px; border: 2px solid #1e293b; border-radius: 6px; box-shadow: 3px 3px 0px rgba(0,0,0,0.15); letter-spacing: 0.3px;}
         .text-red-alert { color: #dc2626 !important; font-weight: 900 !important; }
         .text-green-good { color: #16a34a !important; font-weight: 900 !important; }
         .text-gray-normal { color: #374151; font-weight: 700; }
-        .npd-table th, .npd-table td { padding: 3px; font-size: 10px; text-align: right; border: 1px solid #000; }
+        .npd-table th { padding: 4px 4px; font-size: 9.5px; text-align: center; border: 1px solid #cbd5e1; line-height: 1.25; white-space: normal; overflow-wrap: break-word; vertical-align: middle; min-width: 48px; }
+        .npd-table td { padding: 2px 4px; font-size: 9.5px; text-align: right; border: 1px solid #cbd5e1; line-height: 1.2; white-space: nowrap; }
         .npd-table th:first-child, .npd-table td:first-child { text-align: left; }
         .bg-2025 { background-color: #fde68a; }
         .bg-2026 { background-color: #fed7aa; }
         .bg-grand { background-color: #bbf7d0; font-weight: bold; }
-        .city-card { background: white; border: 2px solid #1e293b; border-radius: 10px; overflow: hidden; display: flex; align-items: center; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s; }
+        .city-card { background: white; border: 2px solid #1e293b; border-radius: 12px; overflow: hidden; display: flex; align-items: center; padding: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; }
         .city-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
         .city-logo { width: 64px; height: 64px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #3b82f6; border-radius: 10px; margin-right: 14px; display:flex; justify-content:center; align-items:center; font-size: 28px; flex-shrink: 0;}
         .city-info { flex: 1; font-size: 11px;}
@@ -49,6 +53,7 @@
         .map-marker-label { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); color: white; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; white-space: nowrap; border: 1px solid rgba(255,255,255,0.2); }
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .excel-table td, .npd-table td, .recharts-text, .recharts-tooltip-item-value { font-variant-numeric: tabular-nums; }
         
         /* MOBILE RESPONSIVE - hanya untuk tampilan HP, tidak mengubah logika/data desktop */
         html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
@@ -65,7 +70,7 @@
             .npd-table th, .npd-table td { font-size: 7px !important; padding: 2px 1px !important; }
             .overflow-x-auto { overflow-x: hidden !important; max-width: 100% !important; }
             .w-\[1200px\], .min-w-\[1000px\], .min-w-\[800px\] { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
-            .max-w-\[1400px\], .max-w-6xl { max-width: 100% !important; }
+            .max-w-\[1400px\], .max-w-6xl, .max-w-7xl { max-width: 100% !important; }
             .header-title { max-width: 100%; box-sizing: border-box; padding-left: 8px !important; padding-right: 8px !important; font-size: 11px !important; }
             .city-card { min-width: 0 !important; }
             .city-info { min-width: 0; }
@@ -227,19 +232,49 @@
 
         const SemiCircleGauge = ({ value = 0, label }) => {
             const safe = Math.max(0, Math.min(150, value)); const rot = (safe / 100) * 180; 
+            const displayVal = Number(value).toFixed(2);
+            const ticks = [];
+            for (let i = 0; i <= 10; i++) {
+                const ang = (i / 10) * Math.PI;
+                const isMajor = i % 5 === 0;
+                const rOut = 44, rIn = isMajor ? 37 : 40;
+                const x1 = 50 - rOut * Math.cos(ang), y1 = 50 - rOut * Math.sin(ang);
+                const x2 = 50 - rIn * Math.cos(ang), y2 = 50 - rIn * Math.sin(ang);
+                ticks.push(<line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#475569" strokeWidth={isMajor ? 1.4 : 0.7} />);
+            }
+            const numLabels = [];
+            [0, 50, 100, 150].forEach((v, i) => {
+                const ang = (v / 150) * Math.PI;
+                const r = 51;
+                const x = 50 - r * Math.cos(ang), y = 50 - r * Math.sin(ang) + 2;
+                numLabels.push(<text key={v} x={x} y={y} textAnchor="middle" fontSize="5.5" fill="#64748b" fontWeight="800" style={{fontFamily: "'Calibri', 'Carlito', sans-serif"}}>{v}</text>);
+            });
             return (
-                <div className="flex flex-col items-center">
-                    <div className="bg-black text-white text-[9px] font-bold px-3 py-0.5 mb-1 rounded">{label}</div>
-                    <div className="relative w-28 h-12 overflow-hidden">
-                        <svg className="w-full h-full drop-shadow" viewBox="0 0 100 50">
-                            <defs><linearGradient id="gGrad"><stop offset="0%" stopColor="#ef4444"/><stop offset="40%" stopColor="#eab308"/><stop offset="100%" stopColor="#22c55e"/></linearGradient></defs>
-                            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="url(#gGrad)" strokeWidth="12" />
-                            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#000" strokeWidth="1.5" />
-                            <path d="M 22 50 A 28 28 0 0 1 78 50" fill="none" stroke="#000" strokeWidth="1.5" />
-                            <g transform={`rotate(${rot - 90} 50 50)`} className="transition-transform duration-1000"><polygon points="49,50 51,50 50,15" fill="#ef4444" stroke="#000" strokeWidth="0.5" /></g>
-                            <circle cx="50" cy="50" r="4" fill="#000" />
+                <div className="flex flex-col items-center" style={{fontFamily: "'Calibri', 'Carlito', sans-serif"}}>
+                    <div className="bg-slate-800 text-amber-400 text-[10px] font-extrabold px-3 py-1 mb-1.5 rounded-full tracking-widest uppercase shadow-sm">{label}</div>
+                    <div className="relative w-40 h-[88px]">
+                        <svg className="w-full h-full" viewBox="0 0 100 58">
+                            <defs>
+                                <linearGradient id="gGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#dc2626"/>
+                                    <stop offset="30%" stopColor="#f97316"/>
+                                    <stop offset="55%" stopColor="#eab308"/>
+                                    <stop offset="80%" stopColor="#84cc16"/>
+                                    <stop offset="100%" stopColor="#16a34a"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="47" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1"/>
+                            <path d="M 6 50 A 44 44 0 0 1 94 50" fill="none" stroke="#e2e8f0" strokeWidth="9" strokeLinecap="round"/>
+                            <path d="M 6 50 A 44 44 0 0 1 94 50" fill="none" stroke="url(#gGrad)" strokeWidth="9" strokeLinecap="round" opacity="0.92"/>
+                            {ticks}
+                            {numLabels}
+                            <g transform={`rotate(${rot - 90} 50 50)`} style={{transition: 'transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)'}}>
+                                <polygon points="49.3,50 50.7,50 50,10" fill="#0f172a" stroke="#1e293b" strokeWidth="0.3"/>
+                            </g>
+                            <circle cx="50" cy="50" r="5.5" fill="#0f172a"/>
+                            <circle cx="50" cy="50" r="2.5" fill="#fbbf24"/>
                         </svg>
-                        <div className="absolute bottom-0 right-0 bg-black text-white text-[10px] font-bold px-1 py-0.5 border border-white">{value}%</div>
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-slate-900 text-amber-400 text-[11px] font-extrabold px-2.5 py-0.5 rounded-md border border-slate-700 shadow-md tracking-tight">{displayVal}%</div>
                     </div>
                 </div>
             );
@@ -255,7 +290,7 @@
                         <button onClick={() => setBrTab('oht')} className={`flex-1 py-2 font-bold text-xs sm:text-sm ${brTab === 'oht' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>OHT MONITOR</button>
                         <button onClick={() => setBrTab('pht')} className={`flex-1 py-2 font-bold text-xs sm:text-sm ${brTab === 'pht' ? 'bg-orange-500' : 'hover:bg-blue-800'}`}>PHT MONITOR</button>
                     </div>
-                    <div className="bg-white border-x border-b border-gray-300 rounded-b-lg p-2 sm:p-4 shadow-sm">
+                    <div className="bg-white border-x border-b border-slate-200 rounded-b-2xl p-2 sm:p-4 shadow-sm">
                         {brTab === 'presentasi' && <OutletPresenterView apiData={apiData} month={globalMonth} selectedOutlet={presenterOutlet} onSelectOutlet={setPresenterOutlet} />}
                         {brTab === 'oht' && <OHTMonitoringView apiData={apiData} month={globalMonth} />}
                         {brTab === 'pht' && <PHTMonitoringView apiData={apiData} month={globalMonth} />}
@@ -357,10 +392,39 @@
                 return { targetFY, targetMTD, tot25, totYtd26, totMtd25, totMtd26, skuArr, skuChart, m, mName };
             }, [selectedOutlet, selectedMonthBR, selectedDistBR, apiData]);
 
+            const outletTrend = useMemo(() => {
+                if (!apiData || !selectedOutlet) return null;
+                const m = parseInt(selectedMonthBR) || 1;
+                const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const isAllMode = selectedOutlet === 'ALL (KESELURUHAN PAPUA)';
+                const searchName = selectedOutlet.includes(' - ') ? selectedOutlet.split(' - ').slice(1).join(' - ') : selectedOutlet;
+                const kSales = ['sum of sales', 'sales', 'value', 'amount'];
+                const kBulan = ['bulan', 'month', 'bln'];
+                const kCustName = ['customer name', 'nama pelanggan', 'nama outlet', 'outlet', 'customer_name'];
+                const kDist = ['distributor', 'dist', 'principal'];
+                const isValidDist = (rowDist) => { if (selectedDistBR === 'ALL') return true; let d = String(rowDist || 'APL').toUpperCase(); if(selectedDistBR === 'APL') return d.includes('APL') || d.includes('ANUGERAH'); if(selectedDistBR === 'KFT') return !d.includes('APL') && !d.includes('ANUGERAH'); return true; };
+                let arr = Array.from({length: m}, (_, i) => ({ name: mNames[i], omset25: 0, omset26: 0 }));
+                (apiData.sales2025 || []).forEach(r => {
+                    let cName = String(getVal(r, kCustName) || '').trim().toUpperCase(); let dist = String(getVal(r, kDist) || 'APL').toUpperCase();
+                    if ((isAllMode || cName === searchName || cName.includes(searchName)) && isValidDist(dist)) {
+                        let bln = parseInt(getVal(r, kBulan)); if (!bln || bln < 1 || bln > m) return;
+                        arr[bln-1].omset25 += parseNum(getVal(r, kSales));
+                    }
+                });
+                (apiData.sales2026 || []).forEach(r => {
+                    let cName = String(getVal(r, kCustName) || '').trim().toUpperCase(); let dist = String(getVal(r, kDist) || 'APL').toUpperCase();
+                    if ((isAllMode || cName === searchName || cName.includes(searchName)) && isValidDist(dist)) {
+                        let bln = parseInt(getVal(r, kBulan)); if (!bln || bln < 1 || bln > m) return;
+                        arr[bln-1].omset26 += parseNum(getVal(r, kSales));
+                    }
+                });
+                return arr;
+            }, [apiData, selectedOutlet, selectedMonthBR, selectedDistBR]);
+
             if (!apiData) return <div className="p-8 text-center text-gray-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
             return (
-                <div className="space-y-6 pb-12 w-full max-w-6xl mx-auto">
+                <div className="space-y-6 pb-12 w-full max-w-7xl mx-auto">
                     <div className="bg-[#0f172a] p-4 sm:p-6 rounded-xl shadow-lg border border-blue-900 text-center relative no-print z-30">
                         <div className="absolute inset-0 opacity-20 rounded-xl overflow-hidden" style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px'}}></div>
                         <h2 className="text-xl sm:text-2xl font-black text-white mb-4 relative z-10">BUSINESS REVIEW OUTLET</h2>
@@ -405,29 +469,29 @@
                                 <p className="text-xs sm:text-sm text-gray-500 font-semibold mt-3">Business Review Report - MTD/YTD {outletData.mName} 2026</p>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
-                                <div className="bg-white border-t-4 border-blue-500 p-3 rounded shadow-sm text-center">
+                                <div className="bg-white border-t-4 border-blue-500 p-4 rounded-xl shadow-sm text-center">
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Target Total FY 2026</p>
                                     <h3 className="text-xl font-black text-blue-900">Rp {formatCurr(outletData.targetFY)}</h3>
                                     <div className="mt-2 pt-2 border-t border-gray-100"><p className="text-[9px] text-gray-400">Target MTD {outletData.mName}: Rp {formatCurr(outletData.targetMTD)}</p></div>
                                 </div>
-                                <div className="bg-white border-t-4 border-gray-400 p-3 rounded shadow-sm text-center">
+                                <div className="bg-white border-t-4 border-gray-400 p-4 rounded-xl shadow-sm text-center">
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Transaksi 2025 (FY)</p>
                                     <h3 className="text-xl font-black text-gray-700">Rp {formatCurr(outletData.tot25)}</h3>
                                     <div className="mt-2 pt-2 border-t border-gray-100"><p className="text-[9px] text-gray-400">MTD {outletData.mName} 2025: Rp {formatCurr(outletData.totMtd25)}</p></div>
                                 </div>
-                                <div className="bg-white border-t-4 border-orange-500 p-3 rounded shadow-sm text-center">
+                                <div className="bg-white border-t-4 border-orange-500 p-4 rounded-xl shadow-sm text-center">
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">MTD Transaksi 2026 ({outletData.mName})</p>
                                     <h3 className="text-2xl font-black text-orange-600">Rp {formatCurr(outletData.totMtd26)}</h3>
                                     <div className="mt-2 pt-2 border-t border-gray-100"><p className="text-[9px] text-gray-400 font-bold">Total YTD: Rp {formatCurr(outletData.totYtd26)}</p></div>
                                 </div>
-                                <div className="bg-white border-t-4 border-green-500 p-3 rounded shadow-sm text-center flex flex-col justify-center relative">
+                                <div className="bg-white border-t-4 border-green-500 p-4 rounded-xl shadow-sm text-center flex flex-col justify-center relative">
                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">% Ach Target MTD</p>
                                     <h3 className={`text-4xl font-black ${cAch(getP(outletData.totMtd26, outletData.targetMTD))}`}>{getP(outletData.totMtd26, outletData.targetMTD).toFixed(2)}%</h3>
                                     <div className="absolute top-2 right-2 bg-green-100 text-green-800 text-[9px] px-2 py-0.5 rounded font-bold">YTD Ach: {getP(outletData.totYtd26, outletData.targetFY).toFixed(2)}%</div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full">
-                                <div className="bg-white p-4 border border-gray-300 shadow-sm rounded w-full">
+                                <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full">
                                     <div className="text-center mb-4 border-b pb-2"><h3 className="font-black text-sm text-gray-800 uppercase tracking-wider">📊 Tren Keanekaragaman Produk (SKU)</h3></div>
                                     <div className="w-full h-[250px]">
                                         <ResponsiveContainer width="100%" height="100%">
@@ -461,7 +525,25 @@
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white p-4 border border-gray-300 shadow-sm rounded w-full">
+                            {outletTrend && selectedOutlet !== 'ALL (KESELURUHAN PAPUA)' && (
+                                <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full">
+                                    <div className="text-center mb-4 border-b pb-2"><h3 className="font-black text-sm text-gray-800 uppercase tracking-wider">Tren Omset Outlet — 2025 vs 2026</h3></div>
+                                    <div className="w-full h-[280px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={outletTrend} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="name" tick={{fontSize: 10}} />
+                                                <YAxis tick={{fontSize: 10}} />
+                                                <Tooltip contentStyle={{fontSize: '11px', borderRadius: '8px'}} formatter={(v) => 'Rp ' + formatCurr(v)} />
+                                                <Legend verticalAlign="top" height={24} wrapperStyle={{fontSize: '11px'}} iconType="circle"/>
+                                                <Line type="monotone" dataKey="omset25" name="Omset 2025" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                                                <Line type="monotone" dataKey="omset26" name="Omset 2026" stroke="#f59e0b" strokeWidth={3} dot={{r: 4}} />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full">
                                 <h3 className="font-black text-sm text-center mb-3 bg-blue-100 text-blue-900 py-2 border border-blue-200">DETAIL TRANSAKSI PER PRODUK (SKU) - YTD & MTD BULAN {outletData.mName}</h3>
                                 <div className="w-full overflow-x-auto">
                                 <table className="excel-table w-full min-w-[800px]">
@@ -914,7 +996,7 @@
 
             return (
                 <div className="space-y-6 w-full">
-                    <div className="bg-white p-6 border shadow-md w-full">
+                    <div className="bg-white p-6 border border-slate-200 shadow-sm rounded-2xl w-full">
                         <div className="text-center mb-6">
                             <h2 className="header-title !text-xl !px-12">PHT MONITORING (PRODUK HIT TARGET) - BULAN {mName.toUpperCase()} 2026</h2>
                             <p className="text-xs text-gray-500 font-semibold italic">Evaluasi Pencapaian Target Per Produk (SKU) MTD & YTD</p>
@@ -1317,19 +1399,19 @@
             return (
                 <div className="space-y-4 animate-fade-in pb-8 w-full">
                     <div className="flex justify-end items-center gap-2 px-4 no-print">
-                        <span className="text-xs font-bold text-gray-700 uppercase">View Mode:</span>
-                        <div className="flex bg-gray-200 rounded p-1">
-                            <button onClick={() => setViewMode('MTD')} className={`px-4 py-1 font-bold rounded text-xs ${viewMode==='MTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>MTD</button>
-                            <button onClick={() => setViewMode('YTD')} className={`px-4 py-1 font-bold rounded text-xs ${viewMode==='YTD' ? 'bg-orange-500 text-white shadow' : 'text-gray-600'}`}>YTD</button>
+                        <span className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">View Mode:</span>
+                        <div className="flex bg-slate-200 rounded-lg p-1 gap-0.5">
+                            <button onClick={() => setViewMode('MTD')} className={`px-4 py-1.5 font-extrabold rounded-md text-xs transition-all tracking-wide ${viewMode==='MTD' ? 'bg-amber-400 text-slate-900 shadow' : 'text-slate-500 hover:text-slate-800'}`}>MTD</button>
+                            <button onClick={() => setViewMode('YTD')} className={`px-4 py-1.5 font-extrabold rounded-md text-xs transition-all tracking-wide ${viewMode==='YTD' ? 'bg-amber-400 text-slate-900 shadow' : 'text-slate-500 hover:text-slate-800'}`}>YTD</button>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-full">
-                        <div className="bg-white border-2 border-black p-2 relative shadow-md">
-                            <div className="absolute left-0 top-0 bottom-0 w-6 bg-[#f97316] flex items-center justify-center border-r-2 border-black"><span className="transform -rotate-90 font-black text-xs text-white tracking-widest">MTD</span></div>
+                        <div className="bg-white border border-slate-200 p-4 relative shadow-sm rounded-2xl">
+                            <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-b from-amber-400 to-orange-500 flex items-center justify-center border-r border-slate-200 rounded-l-2xl"><span className="transform -rotate-90 font-black text-xs text-white tracking-widest">MTD</span></div>
                             <div className="ml-8">
                                 <div className="text-center"><h2 className="header-title">Perf By Business Type</h2></div>
-                                <div className="flex justify-around border-2 border-black p-1 mb-2 bg-white">
+                                <div className="flex justify-around bg-gradient-to-b from-slate-50 to-white rounded-2xl p-4 mb-3 border border-slate-200 shadow-sm">
                                     <SemiCircleGauge value={getP(mTot.a, mTot.q)} label="PAPUA" />
                                     <SemiCircleGauge value={getP(dMap.biz.CHG.a_mtd, dMap.biz.CHG.q_mtd)} label="CHG" />
                                     <SemiCircleGauge value={getP(dMap.biz.PHG.a_mtd, dMap.biz.PHG.q_mtd)} label="PHG" />
@@ -1345,11 +1427,11 @@
                             </div>
                         </div>
 
-                        <div className="bg-white border-2 border-black p-2 relative shadow-md">
-                            <div className="absolute left-0 top-0 bottom-0 w-6 bg-[#f97316] flex items-center justify-center border-r-2 border-black"><span className="transform -rotate-90 font-black text-xs text-white tracking-widest">YTD</span></div>
+                        <div className="bg-white border border-slate-200 p-4 relative shadow-sm rounded-2xl">
+                            <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-b from-amber-400 to-orange-500 flex items-center justify-center border-r border-slate-200 rounded-l-2xl"><span className="transform -rotate-90 font-black text-xs text-white tracking-widest">YTD</span></div>
                             <div className="ml-8">
                                 <div className="text-center"><h2 className="header-title">Accumulated YTD</h2></div>
-                                <div className="flex justify-around border-2 border-black p-1 mb-2 bg-white">
+                                <div className="flex justify-around bg-gradient-to-b from-slate-50 to-white rounded-2xl p-4 mb-3 border border-slate-200 shadow-sm">
                                     <SemiCircleGauge value={getP(yTot.a, yTot.q)} label="PAPUA" />
                                     <SemiCircleGauge value={getP(dMap.biz.CHG.a_ytd, dMap.biz.CHG.q_ytd)} label="CHG" />
                                     <SemiCircleGauge value={getP(dMap.biz.PHG.a_ytd, dMap.biz.PHG.q_ytd)} label="PHG" />
@@ -1375,7 +1457,7 @@
                         </div>
                     </div>
 
-                    <div className="bg-white p-3 border shadow-md w-full overflow-x-auto">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full overflow-x-auto">
                         <div className="text-center mb-2"><h2 className="header-title">Performance By Division {viewMode} {mName} 2026</h2></div>
                         <table className="excel-table w-full">
                             <thead>
@@ -1395,7 +1477,7 @@
                         </table>
                     </div>
 
-                    <div className="bg-white p-3 shadow-md w-full overflow-x-auto">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full overflow-x-auto">
                         <div className="text-center mb-2"><h2 className="header-title">Performance By Cluster/Channel {viewMode} {mName} 2026 (By Business Type)</h2></div>
                         <table className="excel-table w-full">
                             <thead>
@@ -1424,7 +1506,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div className="bg-white p-3 shadow-md w-full overflow-x-auto mt-6">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full overflow-x-auto mt-6">
                         <div className="text-center mb-2"><h2 className="header-title">Performance Gabungan PHG & CHG {viewMode} {mName} 2026</h2></div>
                         <table className="excel-table w-full">
                             <thead>
@@ -1655,6 +1737,39 @@
                 return { monthlyRows, grandM, channelRows, grandC, masterCountGlobal };
             }, [apiData, m, mode, filterDist, searchOutlet]);
 
+            const summaryTrend = useMemo(() => {
+                if (!apiData) return null;
+                const kSales = ['sum of sales','sales','value','amount'];
+                const kBulan = ['bulan','month','bln'];
+                const kDist = ['distributor'];
+                const kCustName = ['customer name','nama outlet','outlet'];
+                const fDist = filterDist !== 'ALL';
+                const q = searchOutlet.trim().toUpperCase();
+                const fSearch = q && q !== 'ALL';
+                const pass = (r) => {
+                    if (fDist && normDist(getVal(r,kDist)) !== filterDist) return false;
+                    if (fSearch) { const cn = String(getVal(r,kCustName)||'').toUpperCase(); if (!cn.includes(q)) return false; }
+                    return true;
+                };
+                const isMtd = mode === 'MTD';
+                const months = isMtd ? [m] : Array.from({length: m}, (_, i) => i + 1);
+                let map = {};
+                months.forEach(mon => { map[mon] = { name: mNames[mon-1], 'Total 2025': 0, 'Total 2026': 0, 'PHG 2026': 0, 'CHG 2026': 0 }; });
+                (apiData.sales2025 || []).forEach(r => {
+                    if (!pass(r)) return;
+                    const b = parseInt(getVal(r, kBulan)) || 0; if (!map[b]) return;
+                    map[b]['Total 2025'] += parseNum(getVal(r, kSales));
+                });
+                (apiData.sales2026 || []).forEach(r => {
+                    if (!pass(r)) return;
+                    const b = parseInt(getVal(r, kBulan)) || 0; if (!map[b]) return;
+                    const v = parseNum(getVal(r, kSales)); const biz = detectBizType(r);
+                    map[b]['Total 2026'] += v;
+                    if (biz === 'PHG') map[b]['PHG 2026'] += v; else if (biz === 'CHG') map[b]['CHG 2026'] += v;
+                });
+                return months.map(mon => map[mon]);
+            }, [apiData, m, mode, filterDist, searchOutlet]);
+
             // Popup detail outlet untuk growth minus
             const handleSumClick = (title, filter) => {
                 if (!apiData) return;
@@ -1811,6 +1926,27 @@
                         <input type="text" value={searchOutlet} onChange={(e)=>setSearchOutlet(e.target.value)} placeholder="CARI NAMA OUTLET... (ketik ALL untuk semua)" className="border-2 border-blue-400 rounded p-1.5 text-xs font-bold bg-white flex-1 min-w-[180px] uppercase" />
                         <span className="text-[10px] text-gray-500 italic">Master List: {tables.masterCountGlobal} outlet · Klik angka Growth merah untuk lihat detail outlet</span>
                     </div>
+
+                    {summaryTrend && summaryTrend.length > 0 && (
+                        <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full mb-6">
+                            <div className="text-center mb-4 border-b pb-2"><h3 className="font-black text-sm text-gray-800 uppercase tracking-wider">TREN SALES (OMSET) PAPUA — 2025 vs 2026 ({mode})</h3></div>
+                            <div className="w-full h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={summaryTrend} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" tick={{fontSize: 10}} />
+                                        <YAxis tick={{fontSize: 10}} />
+                                        <Tooltip contentStyle={{fontSize: '11px', borderRadius: '8px'}} formatter={(v) => 'Rp ' + formatCurr(v)} />
+                                        <Legend verticalAlign="top" height={24} wrapperStyle={{fontSize: '11px'}} iconType="circle"/>
+                                        <Line type="monotone" dataKey="Total 2025" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                                        <Line type="monotone" dataKey="Total 2026" stroke="#f59e0b" strokeWidth={3} dot={{r: 4}} />
+                                        <Line type="monotone" dataKey="PHG 2026" stroke="#10b981" strokeWidth={2} dot={false} />
+                                        <Line type="monotone" dataKey="CHG 2026" stroke="#fb7185" strokeWidth={2} dot={false} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="mb-3">
                         <h2 className="header-title">SALES SUMMARY — MTD PER BULAN</h2>
@@ -2269,7 +2405,7 @@
                         </div>
                     </div>
 
-                    <div className="bg-white p-3 border shadow-md w-full overflow-x-auto">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full overflow-x-auto">
                         <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND (CHG) - {viewMode} {paretoData.mName} 2026</h2></div>
                         <table className="excel-table w-full">
                             <thead>
@@ -2289,7 +2425,7 @@
                         </table>
                     </div>
 
-                    <div className="bg-white p-3 border shadow-md w-full overflow-x-auto mt-6">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full overflow-x-auto mt-6">
                         <div className="text-center mb-2"><h2 className="header-title">TOP 10 PARETO BRAND (PHG) - {viewMode} {paretoData.mName} 2026</h2></div>
                         <table className="excel-table w-full">
                             <thead>
@@ -2503,7 +2639,7 @@
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
-                    <div className="bg-white p-4 border shadow-md w-full">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full">
                         <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
                             <h2 className="header-title !mb-0 !text-xl !px-10">Big Pareto City/Kabupaten in Papua</h2>
                             <div className="flex bg-gray-200 rounded p-1 no-print">
@@ -2860,7 +2996,7 @@
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
-                    <div className="bg-white p-4 shadow-md border border-gray-300 w-full">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full">
                         <div className="flex flex-wrap justify-between items-center mb-2 gap-2">
                             <h2 className="header-title !mb-0">Performance Buying Outlet</h2>
                             <div className="flex bg-gray-200 rounded p-1 no-print">
@@ -3173,6 +3309,20 @@
 
             if (!apiData || !npdData) return <div className="p-8 text-center text-slate-500 font-bold bg-white shadow rounded border">Data tidak tersedia.</div>;
 
+            const npdM = parseInt(localMonth) || 1;
+            const npdMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const npdChartMonths = viewMode === 'MTD' ? [npdM] : Array.from({length: npdM}, (_, i) => i + 1);
+            const npdOmsetChartData = npdChartMonths.map(mon => ({
+                name: npdMonthNames[mon-1],
+                'Omset 2025': npdData.totOmset.s25[mon] || 0,
+                'Omset 2026': npdData.totOmset.s26[mon] || 0
+            }));
+            const npdAOChartData = npdChartMonths.map(mon => ({
+                name: npdMonthNames[mon-1],
+                'AO 2025': npdData.totAO.s25[mon] || 0,
+                'AO 2026': npdData.totAO.s26[mon] || 0
+            }));
+
             return (
                  <div className="space-y-8 animate-fade-in pb-12 w-full max-w-none">
                     <div className="bg-slate-50 p-4 border border-gray-300 rounded-lg flex flex-wrap gap-4 items-center no-print">
@@ -3198,7 +3348,7 @@
                         <div className="text-[10px] text-gray-500 italic w-full">*Mode Total akan memengaruhi perhitungan kolom Total 2025, Total 2026 & Grand Total berdasarkan Bulan yang dipilih.</div>
                     </div>
 
-                    <div className="bg-white p-4 border shadow-md w-full overflow-x-auto">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full overflow-x-auto">
                         <div className="text-center mb-4"><h2 className="header-title">NPD MONITORING PERFORMANCE (OMSET)</h2></div>
                         <div className="w-full">
                             <table className="excel-table npd-table w-[1200px] max-w-none">
@@ -3239,8 +3389,43 @@
                             </table>
                         </div>
                     </div>
-                    
-                    <div className="bg-white p-4 border shadow-md w-full overflow-x-auto">
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                        <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full">
+                            <div className="text-center mb-4 border-b pb-2"><h3 className="font-black text-sm text-gray-800 uppercase tracking-wider">Tren Omset NPD 2025 vs 2026 ({viewMode})</h3></div>
+                            <div className="w-full h-[280px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={npdOmsetChartData} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" tick={{fontSize: 10}} />
+                                        <YAxis tick={{fontSize: 10}} />
+                                        <Tooltip contentStyle={{fontSize: '11px', borderRadius: '8px'}} formatter={(v) => 'Rp ' + formatCurr(v)} />
+                                        <Legend verticalAlign="top" height={24} wrapperStyle={{fontSize: '11px'}} iconType="circle"/>
+                                        <Line type="monotone" dataKey="Omset 2025" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                                        <Line type="monotone" dataKey="Omset 2026" stroke="#f59e0b" strokeWidth={3} dot={{r: 4}} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                        <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full">
+                            <div className="text-center mb-4 border-b pb-2"><h3 className="font-black text-sm text-gray-800 uppercase tracking-wider">Tren AO (Outlet Aktif) NPD 2025 vs 2026 ({viewMode})</h3></div>
+                            <div className="w-full h-[280px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={npdAOChartData} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" tick={{fontSize: 10}} />
+                                        <YAxis tick={{fontSize: 10}} allowDecimals={false} />
+                                        <Tooltip contentStyle={{fontSize: '11px', borderRadius: '8px'}} />
+                                        <Legend verticalAlign="top" height={24} wrapperStyle={{fontSize: '11px'}} iconType="circle"/>
+                                        <Line type="monotone" dataKey="AO 2025" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                                        <Line type="monotone" dataKey="AO 2026" stroke="#10b981" strokeWidth={3} dot={{r: 4}} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full overflow-x-auto">
                         <div className="text-center mb-4"><h2 className="header-title">MONITORING AO (ACTIVE OUTLETS)</h2></div>
                         <div className="w-full">
                             <table className="excel-table npd-table w-[1200px] max-w-none">
@@ -3495,7 +3680,7 @@
 
             return (
                 <div className="space-y-4 animate-fade-in pb-12 w-full">
-                    <div className="bg-white p-6 border shadow animate-fade-in w-full">
+                    <div className="bg-white p-6 border border-slate-200 shadow-sm rounded-2xl animate-fade-in w-full">
                         <div className="flex flex-col md:flex-row justify-between items-center mb-4 border-b pb-2 gap-4">
                             <h2 className="text-xl font-black text-blue-900 mb-2 md:mb-0">Analisa Stock Forecast & Kebutuhan Akhir Tahun</h2>
                             <div className="flex flex-wrap gap-2 no-print">
@@ -3731,7 +3916,7 @@
                     </div>
 
                     {/* DISTRIBUTOR RANKING */}
-                    <div className="bg-white p-3 rounded shadow border">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <h2 className="header-title !text-sm">AKUNTABILITAS — RANKING DISTRIBUTOR (diurut ACH terendah)</h2>
                         <div className="overflow-x-auto mt-2">
                             <table className="excel-table w-full">
@@ -3759,7 +3944,7 @@
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* LOST OUTLETS */}
-                        <div className="bg-white p-3 rounded shadow border">
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                             <h2 className="header-title !text-sm !bg-gradient-to-r !from-red-600 !to-red-500 !text-white">ACTION — LOST OUTLETS ({data.lost.length})</h2>
                             <p className="text-[10px] text-gray-500 italic mt-1">Outlet beli periode LY tapi TIDAK beli periode ini — harus di-follow up tim sales. Diurut dari nilai LY terbesar.</p>
                             <div className="overflow-x-auto mt-2 max-h-80 overflow-y-auto">
@@ -3784,7 +3969,7 @@
                         </div>
 
                         {/* PARETO OUTLET */}
-                        <div className="bg-white p-3 rounded shadow border">
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                             <h2 className="header-title !text-sm !bg-gradient-to-r !from-purple-600 !to-purple-500 !text-white">FOKUS — PARETO OUTLET (80/20)</h2>
                             <p className="text-[10px] text-gray-500 italic mt-1">{data.paretoCount} outlet menyumbang 80% sales ({formatCurr(data.totalCy)}). Prioritaskan kunjungan & promo ke outlet ini.</p>
                             <div className="overflow-x-auto mt-2 max-h-80 overflow-y-auto">
@@ -3807,7 +3992,7 @@
                     </div>
 
                     {/* NPD SPEED */}
-                    <div className="bg-white p-3 rounded shadow border">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                         <h2 className="header-title !text-sm !bg-gradient-to-r !from-green-600 !to-emerald-500 !text-white">NPD — KECEPATAN DISTRIBUSI (sejak transaksi pertama s.d. {mName})</h2>
                         <div className="overflow-x-auto mt-2">
                             <table className="excel-table w-full">
@@ -3906,7 +4091,7 @@
 
             return (
                 <div className="space-y-6 animate-fade-in pb-12 w-full">
-                    <div className="bg-white p-4 shadow-md border border-gray-300 w-full">
+                    <div className="bg-white p-5 border border-slate-200 shadow-sm rounded-2xl w-full">
                         <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                             <h2 className="header-title !mb-0 !bg-gradient-to-r !from-purple-600 !to-purple-800 !text-white !border-purple-300">KPI PERFORMANCE</h2>
                             <div className="flex bg-gray-200 rounded p-1 no-print">
@@ -3978,7 +4163,7 @@
                 const handleClickOutside = (event) => { if (globalDropdownRef.current && !globalDropdownRef.current.contains(event.target)) { setIsGlobalDropdownOpen(false); } };
                 document.addEventListener('mousedown', handleClickOutside); return () => document.removeEventListener('mousedown', handleClickOutside);
             }, []);
-            
+
             const outletSuggestions = useMemo(() => {
                 if(!apiData) return [];
                 let set = new Set();
@@ -3997,45 +4182,57 @@
 
             return (
                 <div className="min-h-screen flex flex-col">
-                    <div className="bg-white border-b shadow-sm sticky top-0 z-50 no-print">
-                        <div className="max-w-[1400px] mx-auto px-2 py-2 md:px-4 md:py-3 flex flex-wrap justify-between items-center gap-2">
-                            <h1 className="text-lg md:text-xl font-black italic text-blue-900 tracking-tighter w-full lg:w-auto text-center lg:text-left">Push Limits Dashboard</h1>
-                            <div className="flex w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 snap-x justify-start lg:justify-center">
-                                <div className="flex space-x-1 whitespace-nowrap px-1">
-                                    <button onClick={()=>setActiveTab('presenter')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='presenter'?'border-red-500 text-red-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Business Review</button>
-                                    <button onClick={()=>setActiveTab('summary')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='summary'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Summary</button>
-                                    <button onClick={()=>setActiveTab('brandsummary')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='brandsummary'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Brand Summary</button>
-                                    <button onClick={()=>setActiveTab('divsummary')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='divsummary'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Division Summary</button>
-                                    <button onClick={()=>setActiveTab('dashboard')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='dashboard'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Report Sales</button>
-                                    <button onClick={()=>setActiveTab('pareto')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='pareto'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Pareto Brand</button>
-                                    <button onClick={()=>setActiveTab('city')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='city'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Big City Papua</button>
-                                    <button onClick={()=>setActiveTab('outlets')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='outlets'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Buying Outlets</button>
-                                    <button onClick={()=>setActiveTab('npd')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='npd'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>NPD Monitor</button>
-                                    <button onClick={()=>setActiveTab('forecast')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='forecast'?'border-orange-500 text-orange-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Forecast</button>
-                                    <button onClick={()=>setActiveTab('kpi')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='kpi'?'border-purple-500 text-purple-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>KPI</button>
-                                    <button onClick={()=>setActiveTab('action')} className={`px-3 py-2 text-xs md:text-sm font-bold border-b-4 snap-start ${activeTab==='action'?'border-red-500 text-red-600':'border-transparent text-gray-500 hover:text-gray-800'}`}>Action Board</button>
+                    <header className="bg-slate-900 text-white sticky top-0 z-50 shadow-md no-print">
+                        <div className="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2 sm:h-16 sm:flex-nowrap sm:py-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-xl shadow">PL</div>
+                                <div>
+                                    <h1 className="text-sm sm:text-base font-black uppercase tracking-tight">Push Limits Dashboard</h1>
+                                    <p className="text-[10px] text-slate-400">Papua Sales Intelligence System</p>
                                 </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 text-sm font-bold w-full lg:w-auto justify-center lg:justify-end">
-                                {isLoading ? <span className="text-orange-500 text-xs">Memuat...</span> : errorMsg ? <span className="text-red-500 text-xs">⚠️ Error</span> : <span className="text-green-600 hidden lg:inline text-xs">✅ Terhubung</span>}
+                            <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-end">
+                                {isLoading ? <span className="text-amber-400 text-xs font-bold">Memuat...</span> : errorMsg ? <span className="text-red-400 text-xs font-bold">Error</span> : <span className="text-emerald-400 hidden lg:inline text-xs font-bold">Terhubung</span>}
+                                <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+                                    <span className="text-xs font-bold text-amber-400">Bulan:</span>
+                                    <select value={filters.month} onChange={(e) => setFilters({...filters, month: e.target.value})} className="bg-slate-900 text-white text-xs font-bold rounded px-2 py-1 border border-slate-700">
+                                        {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Bln {m}</option>)}
+                                    </select>
+                                </div>
+                                <button onClick={() => window.location.reload()} className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 border border-slate-700" title="Refresh Data">
+                                    <span className={isLoading ? "animate-spin inline-block" : "inline-block"}>↻</span>
+                                </button>
                                 {activeTab !== 'upload' && (
-                                    <div className="flex items-center bg-gray-100 p-1 rounded border gap-1 shadow-sm">
-                                        <select value={filters.month} onChange={(e) => setFilters({...filters, month: e.target.value})} className="bg-white border p-1 font-black text-orange-600 text-[10px] md:text-xs rounded">
-                                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Bln {m}</option>)}
-                                        </select>
-                                        <button onClick={() => exportToPDF(activeTab)} className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download PDF / Print">PDF</button>
-                                        <button onClick={() => exportToExcel(activeTab)} className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download Excel (.xlsx)">XLSX</button>
-                                        <button onClick={() => exportToImage(activeTab)} className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] md:text-xs transition-colors shadow font-bold" title="Download Gambar (Kirim ke WA)">PNG</button>
+                                    <div className="hidden lg:flex gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs font-bold">
+                                        <button onClick={() => exportToExcel(activeTab)} className="px-3 py-1 bg-slate-900 text-emerald-400 rounded-lg" title="Download Excel (.xlsx)">Excel</button>
+                                        <button onClick={() => exportToPDF(activeTab)} className="px-3 py-1 bg-slate-900 text-amber-400 rounded-lg" title="Download PDF / Print">PDF</button>
+                                        <button onClick={() => exportToImage(activeTab)} className="px-3 py-1 bg-slate-900 text-blue-400 rounded-lg" title="Download Gambar (PNG)">PNG</button>
                                     </div>
                                 )}
                             </div>
                         </div>
+                        <div className="bg-slate-950 border-t border-slate-800 overflow-x-auto">
+                            <div className="max-w-7xl mx-auto px-4 flex gap-1 py-2">
+                                <button onClick={()=>setActiveTab('presenter')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='presenter'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Business Review</button>
+                                <button onClick={()=>setActiveTab('summary')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='summary'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Summary</button>
+                                <button onClick={()=>setActiveTab('brandsummary')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='brandsummary'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Brand Summary</button>
+                                <button onClick={()=>setActiveTab('divsummary')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='divsummary'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Division Summary</button>
+                                <button onClick={()=>setActiveTab('dashboard')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='dashboard'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Report Sales</button>
+                                <button onClick={()=>setActiveTab('pareto')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='pareto'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Pareto Brand</button>
+                                <button onClick={()=>setActiveTab('city')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='city'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Big City Papua</button>
+                                <button onClick={()=>setActiveTab('outlets')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='outlets'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Buying Outlets</button>
+                                <button onClick={()=>setActiveTab('npd')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='npd'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>NPD Monitor</button>
+                                <button onClick={()=>setActiveTab('forecast')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='forecast'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Forecast</button>
+                                <button onClick={()=>setActiveTab('kpi')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='kpi'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>KPI</button>
+                                <button onClick={()=>setActiveTab('action')} className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab==='action'?'bg-amber-400 text-slate-950 shadow':'text-slate-400 hover:text-white'}`}>Action Board</button>
+                            </div>
+                        </div>
 
                         {activeTab === 'dashboard' && (
-                            <div className="bg-gray-50 border-t py-2 px-4 flex flex-wrap gap-2 md:gap-4 max-w-[1400px] mx-auto justify-end items-center no-print">
-                                <div className="text-[10px] md:text-xs font-bold text-gray-500 uppercase mr-auto w-full md:w-auto">Global Filters:</div>
+                            <div className="bg-slate-800/60 border-t border-slate-800 py-2 px-4 flex flex-wrap gap-2 md:gap-4 max-w-7xl mx-auto justify-end items-center no-print">
+                                <div className="text-[10px] md:text-xs font-bold text-slate-400 uppercase mr-auto w-full md:w-auto">Global Filters:</div>
                                 <div className="relative w-full md:w-[300px]" ref={globalDropdownRef}>
-                                    <input type="text" value={searchOutlet} onChange={(e) => { setSearchOutlet(e.target.value); setIsGlobalDropdownOpen(true); }} onFocus={() => setIsGlobalDropdownOpen(true)} placeholder="ALL / KETIK NAMA OUTLET..." className="w-full border border-gray-400 p-1 text-[10px] md:text-xs uppercase bg-white" />
+                                    <input type="text" value={searchOutlet} onChange={(e) => { setSearchOutlet(e.target.value); setIsGlobalDropdownOpen(true); }} onFocus={() => setIsGlobalDropdownOpen(true)} placeholder="ALL / KETIK NAMA OUTLET..." className="w-full border border-slate-600 p-1 text-[10px] md:text-xs uppercase bg-slate-900 text-white" />
                                     {isGlobalDropdownOpen && (
                                         <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-400 rounded-md shadow-xl max-h-60 overflow-y-auto text-left">
                                             <li onClick={() => { setSearchOutlet(''); setIsGlobalDropdownOpen(false); }} className="px-2 py-1 text-[10px] sm:text-xs font-bold text-gray-800 hover:bg-gray-200 cursor-pointer border-b border-gray-100">ALL (SEMUA OUTLET)</li>
@@ -4045,21 +4242,21 @@
                                         </ul>
                                     )}
                                 </div>
-                                <select value={filterDistributor} onChange={(e) => setFilterDistributor(e.target.value)} className="border border-gray-400 p-1 text-[10px] md:text-xs w-full md:w-40">
+                                <select value={filterDistributor} onChange={(e) => setFilterDistributor(e.target.value)} className="border border-slate-600 bg-slate-900 text-white p-1 text-[10px] md:text-xs w-full md:w-40">
                                     <option value="ALL">Semua Distributor</option><option value="APL">Distributor: APL</option><option value="KFT">Distributor: KFT & Others</option>
                                 </select>
-                                <select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)} className="border border-gray-400 p-1 text-[10px] md:text-xs w-full md:w-40">
+                                <select value={filterDivisi} onChange={(e) => setFilterDivisi(e.target.value)} className="border border-slate-600 bg-slate-900 text-white p-1 text-[10px] md:text-xs w-full md:w-40">
                                     <option value="ALL">Semua Divisi</option><option value="COMMON CURE">COMMON CURE (CHG)</option><option value="HEALTH SUPPLEMENT">HEALTH SUPPLEMENT (CHG)</option><option value="PERSONAL CARE">PERSONAL CARE (CHG)</option><option value="NATURALS">NATURALS (CHG)</option><option value="CARDIO METABOLIC">CARDIO METABOLIC (PHG)</option><option value="CHILD CARE">CHILD CARE (PHG)</option><option value="CRITICAL CARE">CRITICAL CARE (PHG)</option><option value="GENERAL MEDICINE">GENERAL MEDICINE (PHG)</option><option value="WOMEN HEALTH">WOMEN HEALTH (PHG)</option><option value="WOUND CARE">WOUND CARE (PHG)</option>
                                 </select>
                             </div>
                         )}
-                    </div>
+                    </header>
                     
-                    <main className="max-w-[1400px] mx-auto px-2 md:px-4 mt-4 w-full flex-1">
+                    <main className="max-w-7xl mx-auto px-4 py-6 w-full flex-1">
                         {isLoading ? (
-                            <div className="text-center p-8 md:p-12 mt-10 text-gray-600 font-semibold border bg-white shadow-sm rounded no-print">
-                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-orange-500 border-t-transparent mb-4"></div>
-                                <p className="text-sm md:text-base">Sistem sedang menarik & memproses data dari Google Sheets. Harap tunggu...</p>
+                            <div className="flex flex-col items-center justify-center py-24 space-y-4 no-print">
+                                <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-sm font-bold text-slate-600">Memuat Data Papua Sales...</p>
                             </div>
                         ) : errorMsg && !apiData ? (
                             <div className="p-4 md:p-8 m-2 md:m-4 bg-amber-50 border border-amber-300 rounded text-amber-900 text-center shadow no-print">
@@ -4084,8 +4281,8 @@
                         }
                     </main>
 
-                    <footer className="mt-auto bg-gray-800 text-white text-center py-4 text-xs font-bold border-t-4 border-orange-500 no-print w-full">
-                        Web Monitoring BY Ellyas Martadinata
+                    <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-xs no-print w-full">
+                        Push Limits Dashboard — Papua Sales Intelligence System
                     </footer>
                 </div>
             );
